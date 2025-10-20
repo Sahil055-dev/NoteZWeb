@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inknut_Antiqua } from "next/font/google";
+import { Jost } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const jost = Jost({
   subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-jost",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inknut = Inknut_Antiqua({
   subsets: ["latin"],
+  weight: ["400", "700", "500", "300"],
+  variable: "--font-inknut",
 });
+ 
 
 export const metadata: Metadata = {
   title: "Notez",
@@ -25,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${jost.variable} ${inknut.variable} font-mono `}>
         {/* ✅ Place ThemeProvider here */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}

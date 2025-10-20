@@ -11,15 +11,15 @@ import {
   GraduationCap,
   CheckCircle2,
   Filter,
-  Award
+  Award,
 } from "lucide-react";
 import { Users } from "lucide-react";
-import Logo from "../Header/Components/Logo";
+import Logo from "../Components/Logo";
 
 export default function LandingPage() {
   return (
     <>
-      <div className="min-h-screen bg-background flex flex-col text-foreground">
+      <div className=" min-h-screen bg-background flex flex-col text-foreground">
         <Header></Header>
         <section className="container mx-auto px-4 py-20 md:py-32">
           <div className="max-w-4xl mx-auto text-center space-y-8">
@@ -304,86 +304,101 @@ export default function LandingPage() {
           </div>
         </section>
 
-              <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-                Why Contribute Your Notes?
-              </h2>
-              <p className="text-xl text-muted-foreground">
-                Be part of a growing community making education accessible
-              </p>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              {[
-                {
-                  title: "Help Fellow Students",
-                  desc: "Your notes can help hundreds of students excel in their studies",
-                  emoji: "🤝"
-                },
-                {
-                  title: "Build Your Reputation",
-                  desc: "Become a recognized contributor in the academic community",
-                  emoji: "⭐"
-                },
-                {
-                  title: "Reinforce Your Learning",
-                  desc: "Teaching others is the best way to solidify your own understanding",
-                  emoji: "🧠"
-                },
-                {
-                  title: "Access More Content",
-                  desc: "Active contributors get priority access to premium materials",
-                  emoji: "🔓"
-                },
-              ].map((benefit, idx) => (
-                <Card key={idx} className="p-6 border-secondary/10 hover:shadow-glow transition-all hover:-translate-y-1 border-2">
-                  <div className="text-4xl mb-3">{benefit.emoji}</div>
-                  <h3 className="text-xl font-bold text-foreground mb-2">{benefit.title}</h3>
-                  <p className="text-muted-foreground">{benefit.desc}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="bg-primary py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground dark:text-background/90 mb-6">
-            Ready to Excel Together?
-          </h2>
-          <p className="text-xl text-foreground/90 dark:text-background/90 max-w-2xl mx-auto mb-8">
-            Join community of students already benefiting from quality, verified notes
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" variant="secondary" className="bg-foreground dark:bg-background text-background dark:text-foreground hover:bg-foreground/90 hover:text-primary dark:hover:bg-amber-950/90 dark:hover:text-amber-500 font-semibold text-lg h-14 px-8">
-              Sign Up Now
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button size="lg" variant="outline" className="font-semibold text-lg h-14 px-8 border-2 border-primary-foreground text-primary-foreground hover:bg-primary-hover dark:bg-foreground dark:text-background hover:text-primary-hover">
-              Learn More
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-black text-white  py-10">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-             <Logo size="medium" invert={true} />
-            </div>
-            <div className="text-center md:text-right text-secondary">
-              <p>© 2024 NotesHub. Empowering students through shared knowledge.</p>
+        <section className="py-20">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+                  Why Contribute Your Notes?
+                </h2>
+                <p className="text-xl text-muted-foreground">
+                  Be part of a growing community making education accessible
+                </p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                {[
+                  {
+                    title: "Help Fellow Students",
+                    desc: "Your notes can help hundreds of students excel in their studies",
+                    emoji: "🤝",
+                  },
+                  {
+                    title: "Build Your Reputation",
+                    desc: "Become a recognized contributor in the academic community",
+                    emoji: "⭐",
+                  },
+                  {
+                    title: "Reinforce Your Learning",
+                    desc: "Teaching others is the best way to solidify your own understanding",
+                    emoji: "🧠",
+                  },
+                  {
+                    title: "Access More Content",
+                    desc: "Active contributors get priority access to premium materials",
+                    emoji: "🔓",
+                  },
+                ].map((benefit, idx) => (
+                  <Card
+                    key={idx}
+                    className="p-6 border-secondary/10 hover:shadow-glow transition-all hover:-translate-y-1 border-2"
+                  >
+                    <div className="text-4xl mb-3">{benefit.emoji}</div>
+                    <h3 className="text-xl font-bold text-foreground mb-2">
+                      {benefit.title}
+                    </h3>
+                    <p className="text-muted-foreground">{benefit.desc}</p>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </section>
 
+        {/* Final CTA */}
+        <section className="bg-primary py-20">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground dark:text-background/90 mb-6">
+              Ready to Excel Together?
+            </h2>
+            <p className="text-xl text-foreground/90 dark:text-background/90 max-w-2xl mx-auto mb-8">
+              Join community of students already benefiting from quality,
+              verified notes
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-foreground dark:bg-background text-background dark:text-foreground hover:bg-foreground/90 hover:text-primary dark:hover:bg-amber-950/90 dark:hover:text-amber-500 font-semibold text-lg h-14 px-8"
+              >
+                Sign Up Now
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="font-semibold text-lg h-14 px-8 border-2 border-primary-foreground text-primary-foreground hover:bg-primary-hover dark:bg-foreground dark:text-background hover:text-primary-hover"
+              >
+                Learn More
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-black text-white  py-10">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-2">
+                <Logo size="medium" invert={true} />
+              </div>
+              <div className="text-center md:text-right text-secondary">
+                <p>
+                  © 2024 NotesHub. Empowering students through shared knowledge.
+                </p>
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
     </>
   );

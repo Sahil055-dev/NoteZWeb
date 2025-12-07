@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { studentEducationOptions } from "@/app/data/eduOptions";
 import SelectMenuField from "../EducationSelectMenu";
 import { Button } from "@/components/ui/button";
@@ -14,82 +14,74 @@ import {
   Field,
 } from "@/components/ui/field";
 import Logo from "@/app/Components/Logo";
+import useIsSmallScreen from "@/app/hooks/isSmallScreen";
+import DialogMultiSelect from "../subjectModal";
+
+type OptionsState = {
+  branchOptions: string[];
+  subjectOptions: string[];
+};
+
+type SelectedState = {
+  educationField: string;
+  branch: string;
+  universityTier: string;
+  subjectTags: string[];
+};
 
 export default function StudentSignUp() {
-  const [options, setOptions] = useState({
-    degreeOptions: [] as string[],
-    branchOptions: [] as string[],
-    subjectOptions: [] as string[],
+  const isSmallScreen = useIsSmallScreen();
+  const [options, setOptions] = useState<OptionsState>({
+    branchOptions: [],
+    subjectOptions: [],
   });
-  const [selectedOptions, setSelectedOptions] = useState({
+
+  const [selectedOptions, setSelectedOptions] = useState<SelectedState>({
     educationField: "",
-    degree: "",
     branch: "",
     universityTier: "",
-    subjectTags: [] as string[],
+    subjectTags: [],
   });
 
-  const [showOtherInput, setShowOtherInput] = useState(false);
-  const [otherSubject, setOtherSubject] = useState("");
-
-  // New fields
   const [subjectTagsSelected, setSubjectTagsSelected] = useState<string[]>([]);
 
-  // Handle Education Type change
   const handleEducationChange = (selectedType: string) => {
-    setSelectedOptions((prevValues) => ({
-      ...prevValues,
-      educationField: selectedType,
-    }));
+    setSelectedOptions((prev) => ({ ...prev, educationField: selectedType }));
+
     const selected =
       studentEducationOptions.educationType[
         selectedType as keyof typeof studentEducationOptions.educationType
       ];
+
     if (selected) {
       setOptions((prev) => ({
         ...prev,
-        degreeOptions: selected.degreeType,
-        branchOptions: selected.branch,
-        subjectOptions: selected.subjectTags,
+        branchOptions: selected.branch ?? [],
+        subjectOptions: selected.subjectTags ?? [],
       }));
     } else {
-      setOptions((prev) => ({
-        ...prev,
-      }));
+      setOptions((prev) => ({ ...prev }));
     }
   };
 
-  const handleSelect = (val: string, field: keyof typeof selectedOptions) => {
-    setSelectedOptions((prev) => ({
-      ...prev,
-      [field]: val,
-    }));
+  const handleSelect = (val: string | string[], field: keyof SelectedState) => {
+    setSelectedOptions((prev) => ({ ...prev, [field]: val }));
   };
 
-  // const handleSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   const studentData = {
-  //     educationType,
-  //     degree:
-  //       degreeSelected === "Other" ? otherDegree : degreeSelected || "N/A",
-  //     branch:
-  //       branchSelected === "Other" ? otherBranch : branchSelected || "N/A",
-  //     universityTier,
-  //     subjectTags: subjectTagsSelected,
-  //   };
-  //   console.log("📘 Submitted Data:", studentData);
-  // };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Submitted options:", selectedOptions);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <section className="flex flex-1 items-center justify-center px-4 py-16 md:py-32">
-        <div className="w-full max-w-2xl flex flex-col items-center text-center">
-          {/* Header */}
-          <div className="mb-8">
+        <div className="w-full md:max-w-2xl flex flex-col items-center text-center">
+          <div className="mt-4 mb-8">
             <span className="flex gap-4 justify-center items-baseline">
-              <h1 className="text-3xl md:text-4xl font-semibold">Welcome To</h1>
-              <Logo size="medium" />
-              <h3>for Learners</h3>
+              <h1 className="text-xl md:text-4xl font-semibold">Welcome To</h1>
+              <Logo size={isSmallScreen ? "small" : "medium"} />
+              <h3 className="">for Learners</h3>
             </span>
             <p className="text-muted-foreground mt-2 text-base md:text-lg">
               Enter your academic details to explore exciting notes
@@ -97,7 +89,6 @@ export default function StudentSignUp() {
           </div>
 
           {/* Form */}
-          
           <Card className="w-full p-4 shadow-md bg-card">
             <motion.form
               className="w-full flex flex-col items-start gap-4"
@@ -105,7 +96,7 @@ export default function StudentSignUp() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
               transition={{ duration: 0.2 }}
-              // onSubmit={handleSubmit}
+              onSubmit={handleSubmit}
             >
               <FieldGroup>
                 <FieldSet>
@@ -117,7 +108,7 @@ export default function StudentSignUp() {
                   </FieldDescription>
 
                   {/* Education Type + University Tier */}
-                  <div className="flex gap-2 mt-2">
+                  <div className=" flex flex-col gap-4 mt-2">
                     <SelectMenuField
                       label="Education Type"
                       options={Object.keys(
@@ -135,20 +126,6 @@ export default function StudentSignUp() {
                       onChange={(val) => handleSelect(val, "universityTier")}
                       value={selectedOptions.universityTier}
                     />
-                  </div>
-
-                  {/* Degree + Branch */}
-                  <div className="flex gap-2 mt-4">
-                    <div className="flex-1">
-                      <SelectMenuField
-                        label="Degree Type"
-                        options={options.degreeOptions}
-                        placeholder="Select degree"
-                        disabled={!selectedOptions.educationField}
-                        onChange={(val) => handleSelect(val, "degree")}
-                        value={selectedOptions.degree}
-                      />
-                    </div>
 
                     <div className="flex-1">
                       <SelectMenuField
@@ -163,67 +140,21 @@ export default function StudentSignUp() {
                   </div>
 
                   {/* Subject Interests */}
-                  <div className="flex flex-col mt-4 w-full">
-                    <label className="text-sm font-medium mb-1">
+                  <div className="flex flex-col mt-2 w-full">
+                    <label className="text-start text-sm md:text-base font-medium mb-1">
                       Subject Interests
                     </label>
-
-                    <select
-                      multiple
-                      className="rounded-md border p-2 bg-background text-foreground w-full h-32"
-                      value={subjectTagsSelected}
-                      onChange={(e) => {
-                        const selected = Array.from(
-                          e.target.selectedOptions,
-                          (opt) => opt.value
-                        );
-                        setSubjectTagsSelected(selected);
-                        if (selected.includes("Other")) {
-                          setShowOtherInput(true);
-                        } else {
-                          setShowOtherInput(false);
-                        }
-                      }}
-                    >
-                      {options.subjectOptions.map((subj) => (
-                        <option key={subj} value={subj}>
-                          {subj}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Show input for “Other” when selected */}
-                    {showOtherInput && (
-                      <div className="mt-2 flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Enter other subject"
-                          value={otherSubject}
-                          onChange={(e) => setOtherSubject(e.target.value)}
-                          className="rounded-md border p-2 flex-1 bg-background text-foreground"
-                        />
-                        <button
-                          type="button"
-                          className="border rounded-md px-3 py-1"
-                          onClick={() => {
-                            if (otherSubject.trim() !== "") {
-                              setSubjectTagsSelected((prev) => [
-                                ...prev.filter((v) => v !== "Other"),
-                                otherSubject.trim(),
-                              ]);
-                              setOtherSubject("");
-                              setShowOtherInput(false);
-                            }
-                          }}
-                        >
-                          Add
-                        </button>
-                      </div>
+                    {!selectedOptions.educationField ? (
+                    <FieldDescription className=" text-start text-base md:text-md mt-2">
+                    Select the education type above to choose subjects
+                  </FieldDescription>
+                    ) : (
+                      <DialogMultiSelect
+                        options={options.subjectOptions}
+                        initialSelected={selectedOptions.subjectTags}
+                        onSubmit={(val) => handleSelect(val, "subjectTags")}
+                      />
                     )}
-
-                    <p className="text-xs text-muted-foreground mt-1">
-                      (Hold Ctrl or Cmd to select multiple subjects)
-                    </p>
                   </div>
                 </FieldSet>
 

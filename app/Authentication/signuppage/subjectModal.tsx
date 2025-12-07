@@ -1,167 +1,196 @@
 "use client";
 
-import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogTrigger,
+  DialogClose,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { motion, AnimatePresence } from "framer-motion";
+import { on } from "events";
 
-interface MenuProps {
-  label: string;
-  options: string[];
-  placeholder?: string;
-  width?: string;
-  onChange?: (value: string) => void;
-  value?: string;
-  disabled?: boolean;
-}
+type Props = {
+  options?: string[]; // subject options to show
+  initialSelected?: string[]; // optional initial values
+  onSubmit?: (val: string[]) => void; // optional callback when form submitted
+};
 
-export default function SubjectDialog({
-  label,
+export default function DialogMultiSelect({
   options = [],
-  placeholder = "Select option",
-  width = "w-[180px]",
-  onChange,
-  value = "",
-  disabled = false,
-}: MenuProps) {
-  const [open, setOpen] = React.useState(false);
-  const [selectedSubjects, setSelectedSubjects] = React.useState<string[]>([]);
-  const [showOtherInput, setShowOtherInput] = React.useState(false);
-  const [otherSubject, setOtherSubject] = React.useState("");
+  initialSelected = [],
+  onSubmit,
+}: Props) {
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<string[]>(initialSelected);
 
-  const subjectOptions = [
-    "Mathematics",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "Computer Science",
-    "Economics",
-    "Other",
-  ];
+  // filtered list for display
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((opt) => opt.toLowerCase().includes(q));
+  }, [options, query]);
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions, (opt) => opt.value);
-    setSelectedSubjects(selected);
-    setShowOtherInput(selected.includes("Other"));
-  };
+  const toggle = (val: string) =>
+    setSelected((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
+    );
 
-  const addOtherSubject = () => {
-    if (otherSubject.trim() !== "") {
-      setSelectedSubjects((prev) => [
-        ...prev.filter((v) => v !== "Other"),
-        otherSubject.trim(),
-      ]);
-      setOtherSubject("");
-      setShowOtherInput(false);
-    }
-  };
+  const remove = (val: string) =>
+    setSelected((prev) => prev.filter((v) => v !== val));
 
-  const removeSubject = (subj: string) => {
-    setSelectedSubjects((prev) => prev.filter((v) => v !== subj));
+  const handleSubmit = (values: string[]) => {
+    onSubmit?.(values);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog >
       <DialogTrigger asChild>
-        <Button variant="outline">Open Dialog</Button>
+        <Button
+          variant="outline"
+          className="bg-primary/10 hover:bg-primary/20 border-primary/60"
+          type="button"
+        >
+          Select Subjects
+        </Button>
       </DialogTrigger>
 
-      <AnimatePresence>
-        {open && (
-          <DialogContent className="sm:max-w-[500px]" forceMount>
-            <motion.div
-              key="dialog-inner"
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              <DialogHeader>
-                <DialogTitle>Choose Your Subject Interests</DialogTitle>
-                <DialogDescription>
-                  Select one or more subjects below.
-                </DialogDescription>
-              </DialogHeader>
+      <DialogContent className="sm:max-w-[640px] w-full">
+        <DialogHeader>
+          <DialogTitle>Select Subjects</DialogTitle>
+          <DialogDescription>
+            Search and add the subjects you are interested in. Selected subjects
+            will appear below.
+          </DialogDescription>
+        </DialogHeader>
 
-              {/* ---- Multi-select menu ---- */}
-              <div className="flex flex-col gap-3 mt-4">
-                <Label htmlFor="subjects">Subjects</Label>
-                <select
-                  id="subjects"
-                  multiple
-                  className="rounded-md border p-2 bg-background text-foreground w-full h-32 focus:ring-2 focus:ring-primary focus:outline-none"
-                  value={selectedSubjects}
-                  onChange={handleSelectChange}
+        {/* Search input */}
+        <div className="mt-4">
+          <Label className="text-sm">Search Subjects</Label>
+          <Input
+            placeholder="Type to filter subjects..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="mt-2"
+            aria-label="Search subjects"
+          />
+        </div>
+
+        {/* Results list + selected chips */}
+        <div className="mt-4 grid gap-3">
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm text-secondary mr-2 self-center">
+              Selected:
+            </span>
+
+            <AnimatePresence initial={false}>
+              {selected.length === 0 ? (
+                <motion.span
+                  key="none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-sm text-muted-foreground"
                 >
-                  {subjectOptions.map((subj) => (
-                    <option key={subj} value={subj}>
-                      {subj}
-                    </option>
-                  ))}
-                </select>
+                  Click on the subjects to select 
+                </motion.span>
+              ) : null}
 
-                {showOtherInput && (
-                  <div className="flex gap-2 mt-2">
-                    <input
-                      type="text"
-                      placeholder="Enter other subject"
-                      value={otherSubject}
-                      onChange={(e) => setOtherSubject(e.target.value)}
-                      className="rounded-md border p-2 flex-1 bg-background text-foreground"
-                    />
-                    <Button type="button" onClick={addOtherSubject}>
-                      Add
-                    </Button>
-                  </div>
-                )}
+              {selected.map((s) => (
+                <motion.button
+                  key={s}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  type="button"
+                  onClick={() => remove(s)}
+                  title={`Remove ${s}`}
+                  className="flex items-center gap-2 rounded-full px-3 py-1 bg-card/80 border border-muted text-sm text-foreground shadow-sm"
+                >
+                  <span className="truncate max-w-[12rem]">{s}</span>
+                  <span className="text-xs text-muted-foreground">✕</span>
+                </motion.button>
+              ))}
+            </AnimatePresence>
+          </div>
 
-                {/* ---- Display selected items as themed chips ---- */}
-                {selectedSubjects.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {selectedSubjects.map((subj) => (
-                      <div
-                        key={subj}
-                        className="flex items-center gap-1 px-3 py-1 rounded-full bg-muted text-sm"
+          <div className="mt-1">
+            <Label className="text-sm">Available Subjects</Label>
+
+            <div className="mt-2 max-h-56 overflow-auto rounded-md border bg-background p-2">
+              {filtered.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  No subjects match “{query}”
+                </div>
+              ) : (
+                <ul className="space-y-1">
+                  {filtered.map((opt) => {
+                    const isSelected = selected.includes(opt);
+                    return (
+                      <li
+                        key={opt}
+                        // highlight selected row using app theme — left accent + background tint + bold label
+                        className={`flex items-center justify-between rounded px-2 py-2 cursor-pointer focus:outline-none ${
+                          isSelected
+                            ? "bg-primary/10 border-l-4 border-primary text-foreground font-semibold"
+                            : "hover:bg-muted/40 text-foreground"
+                        }`}
+                        onClick={() => toggle(opt)}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggle(opt);
+                          }
+                        }}
                       >
-                        <span>{subj}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeSubject(subj)}
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                        <div className="flex items-center gap-3">
+                          {/* left spacer where checkbox used to be — keeps alignment */}
+                          <div className="w-5" aria-hidden />
+                          <span className="text-sm truncate">{opt}</span>
+                        </div>
 
-                <p className="text-xs text-muted-foreground mt-1">
-                  (Hold Ctrl or Cmd to select multiple subjects)
-                </p>
-              </div>
+                        {/* Selected hint on the right */}
+                        {isSelected ? (
+                          <span className="text-xs text-muted-foreground">
+                            Selected
+                          </span>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
 
-              <DialogFooter className="mt-6">
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button type="submit">Save</Button>
-              </DialogFooter>
-            </motion.div>
-          </DialogContent>
-        )}
-      </AnimatePresence>
+        {/* Hidden input for form submit */}
+        <input
+          type="hidden"
+          name="subjects"
+          value={selected.join(",")}
+          readOnly
+        />
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button onClick={() => handleSubmit(selected)}>
+              Add Subjects ({selected.length})
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 }

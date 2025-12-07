@@ -1,4 +1,4 @@
-import Header from "../Header/Components/Header";
+import Header from "../Header/Header";
 import ThemeToggle from "../Components/ThemeToggler";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

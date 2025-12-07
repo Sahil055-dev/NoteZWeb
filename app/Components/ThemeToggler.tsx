@@ -17,6 +17,7 @@ export default function ThemeToggle() {
     <Button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       variant="ghost"
+      className="hover:bg-primary-hover"
     >
       {theme === "dark" ?  <SunMedium/> : <Moon/> }
     </Button>

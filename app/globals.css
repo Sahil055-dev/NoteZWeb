@@ -49,6 +49,8 @@
   --gradient-dark: linear-gradient(135deg, hsl(0 0% 10%), hsl(0 0% 20%));
   --shadow-glow: 0 10px 40px -10px hsla(43 98% 49.8% / 0.56);
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --color--scroll-background: var(--scroll-background);
+  --color--scroll-background-hover: var(--scroll-background-hover);
 }
 
 :root {
@@ -58,14 +60,15 @@
   --inv-foreground: oklch(0.984 0.003 247.858);
   --card: oklch(98.951% 0.03761 107.122);
   --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
+  --popover: oklch(99.267% 0.02493 114.241);
   --popover-foreground: oklch(0.129 0.042 264.695);
   --primary: oklch(.852 .199 91.936);
   --primary-foreground: oklch(0% 0 0);
   --primary-hover: oklch(.795 .184 86.047);
+  --primary-selected: oklch(91.181% 0.08712 82.155);
   --secondary: oklch(76.9% 0.188 70.08);
   --secondary-foreground: oklch(0% 0 0);
-  --muted: oklch(0.968 0.007 247.896);
+  --muted: oklch(97.797% 0.00919 100.095);
   --muted-foreground: oklch(67.419% 0.06371 100.572);
   --accent: oklch(0.968 0.007 247.896);
   --accent-foreground: oklch(0.208 0.042 265.755);
@@ -86,6 +89,8 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --scroll-background: color-mix(in oklab, var(--primary) 40%, var(--muted));
+  --scroll-background-hover: color-mix(in oklab, var(--primary-hover) 70%, var(--muted));
 }
 
 .dark {
@@ -94,14 +99,15 @@
   --inv-foreground: oklch(0.129 0.042 264.695);
   --card: oklch(26.792% 0.03796 97.337);
   --card-foreground: oklch(99.624% 0.01821 106.829);
-  --popover: oklch(0.208 0.042 265.755);
+  --popover: oklch(34.926% 0.06426 96.642);
   --popover-foreground: oklch(0.984 0.003 247.858);
   --primary: oklch(79.444% 0.17083 71.184);
   --primary-foreground: oklch(0.984 0.003 247.858);
   --primary-hover: oklch(76.9% 0.188 70.08);
+  --primary-selected: oklch(36.177% 0.07594 76.082);
   --secondary: oklch(.852 .199 91.936);
   --secondary-foreground: oklch(0% 0 0);
-  --muted: oklch(0.279 0.041 260.031);
+  --muted: oklch(34.374% 0.04541 103.309);
   --muted-foreground: oklch(71.285% 0.05253 106.435);
   --accent: oklch(34.374% 0.04541 103.309);
   --accent-foreground: oklch(0.984 0.003 247.858);
@@ -122,6 +128,9 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --scroll-background: color-mix(in oklab, var(--primary) 30%, var(--card));
+  --scroll-background-hover: color-mix(in oklab, var(--primary-hover) 60%, var(--card));
+
 }
 
 @layer base {
@@ -132,4 +141,55 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  /* 1. Change the background color */
+  -webkit-box-shadow: 0 0 0 30px var(--color-muted) inset !important;
+
+  /* 2. Change the text color */
+  -webkit-text-fill-color: var(--color-foreground) !important;
+}
+
+
+
+
+/* ===== Scrollbar (Light + Dark Theme Adaptive) ===== */
+::-webkit-scrollbar {
+  width: 0.6rem;
+  height: 0.6rem;
+  background: transparent;
+}
+
+/* Track (behind thumb) */
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: var(--radius-lg);
+}
+
+/* Scroll thumb */
+::-webkit-scrollbar-thumb {
+  background: var(--color--scroll-background);
+  border-radius: var(--radius-lg);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: var(--transition-smooth);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.15),
+    0 0 6px rgba(0, 0, 0, 0.05);
+}
+
+/* On hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color--scroll-background-hover);
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.25),
+    0 0 8px var(--shadow-glow);
+}
+
+/* Corners */
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

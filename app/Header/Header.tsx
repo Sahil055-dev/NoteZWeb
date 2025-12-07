@@ -1,5 +1,5 @@
 "use client";
-import Logo from "../../Components/Logo";
+import Logo from "../Components/Logo";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/app/Components/ThemeToggler";
 import { useMediaQuery } from "./MediaQueryHook";
@@ -11,8 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import Link from "next/link";
 import { Menu } from "lucide-react";
+import SignInPage from "@/app/Authentication/SignInPage/page";
 
 export default function Header() {
   const isSmallScreen = useMediaQuery("(max-width: 768px)");
@@ -22,12 +23,14 @@ export default function Header() {
       className="
         fixed top-1 left-1/18 md:top-4 md:left-1/2 md:-translate-x-1/2 w-[90%] md:w-[80%] lg:w-[70%]
         xl:w-[60%] border border-border rounded-2xl 
-        bg-background/40 backdrop-blur-sm 
+        bg-background/40 backdrop-blur-xs 
         z-50 inset-ring-1 inset-ring-secondary/60
       "
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
-        <Logo size={isSmallScreen ? "xsmall" : "small"} />
+        <Link href="../">
+          <Logo size={isSmallScreen ? "xsmall" : "small"} />
+        </Link>
 
         {/* 👇 Right section */}
         {!isSmallScreen ? (
@@ -37,10 +40,10 @@ export default function Header() {
               variant="ghost"
               className="text-foreground border-primary md:text-md rounded-md hover:bg-primary-hover hover:text-foreground transition"
             >
-              Sign In
+              <Link href="../Authentication/SignInPage">Sign In</Link>
             </Button>
             <Button className="bg-primary hover:bg-primary-hover text-foreground md:text-md">
-              Sign Up
+              <Link href="../Authentication/signuppage">Sign Up</Link>
             </Button>
             <ThemeToggle />
           </div>

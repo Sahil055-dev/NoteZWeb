@@ -3,7 +3,7 @@ import { Inknut_Antiqua } from "next/font/google";
 import { Jost } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
-import Header from "./Header/Header";
+import HeaderWrapper from "./Header/HeaderWrapper"; 
 
 const jost = Jost({
   subsets: ["latin"],
@@ -33,7 +33,7 @@ export default function RootLayout({
       <body className={`${jost.variable} ${inknut.variable} font-mono `}>
         {/* ✅ Place ThemeProvider here */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Header></Header>
+          <HeaderWrapper/>
           {children}
         </ThemeProvider>
       </body>

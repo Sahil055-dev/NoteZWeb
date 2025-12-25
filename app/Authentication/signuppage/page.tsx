@@ -1,3 +1,5 @@
+'use client'
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -18,8 +20,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/app/Components/DatePicker";
 import { Card } from "@/components/ui/card";
+import useIsSmallScreen from "@/app/hooks/isSmallScreen";
 
-export default function FieldDemo() {
+export default function SignUpPage() {
+  const isSmallScreen = useIsSmallScreen();
   return (
     <div className="min-h-screen flex flex-col bg-background">
       
@@ -27,13 +31,13 @@ export default function FieldDemo() {
         <div className="w-full max-w-sm md:max-w-xl lg:max-w-2xl flex flex-col items-center text-center">
           <div className="mb-8 mt-8 md:mt-0">
             <span className="flex gap-4 justify-center items-baseline">
-              <h1 className="text-3xl md:text-4xl font-semibold text-foreground">
+              <h1 className="text-xl md:text-4xl font-semibold text-foreground">
                 Welcome To
               </h1>
-              <Logo size="medium"></Logo>
+              <Logo size={isSmallScreen ? "small" : "medium"} />
             </span>
 
-            <p className="text-muted-foreground mt-2 text-base  md:text-lg">
+            <p className="text-muted-foreground mt-2 text-sm  md:text-lg">
               Sign Up to continue — exiciting notes, tasks, and ideas are
               waiting for you.
             </p>
@@ -61,7 +65,7 @@ export default function FieldDemo() {
                           id="checkout-7j9-card-name-43j"
                           placeholder="Enter your first name"
                           required
-                          className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10"
+                          className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10 "
                         />
                       </Field>
                       <Field>
@@ -79,6 +83,15 @@ export default function FieldDemo() {
                         />
                       </Field>
                     </div>
+                    <Field>
+                      <FieldLabel
+                        className="text-sm md:text-base"
+                        htmlFor="checkout-7j9-card-number-uw1"
+                      >
+                        Date of Birth
+                      </FieldLabel>
+                      <DatePicker />
+                    </Field>
 
                     <Field>
                       <FieldLabel
@@ -94,36 +107,36 @@ export default function FieldDemo() {
                         className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10"
                       />
                     </Field>
-                    <Field>
-                      <FieldLabel
-                        className="text-sm md:text-base"
-                        htmlFor="checkout-7j9-card-number-uw1"
-                      >
-                        Date of Birth
-                      </FieldLabel>
-                      <DatePicker />
-                    </Field>
-                    <Field className="flex flex">
-                      <FieldLabel
-                        className="text-sm md:text-base"
-                        htmlFor="checkout-7j9-card-number-uw1"
-                      >
-                        Select Your Role
-                      </FieldLabel>
-                      <RadioGroup className="flex" defaultValue="comfortable">
-                        <p className="text-muted-foreground">
-                          You want to enroll as
-                        </p>
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value="learner" id="r2" />
-                          <Label htmlFor="r2">Learner</Label>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value="mentor" id="r3" />
-                          <Label htmlFor="r3">Mentor</Label>
-                        </div>
-                      </RadioGroup>
-                    </Field>
+                                        <div className="flex gap-2 ">
+                      <Field>
+                        <FieldLabel
+                          className="text-sm md:text-base"
+                          htmlFor="checkout-7j9-card-name-43j"
+                        >
+                          Password
+                        </FieldLabel>
+                        <Input
+                          id="checkout-7j9-card-name-43j"
+                          placeholder="Enter your Password"
+                          required
+                          className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10 "
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel
+                          className="text-sm md:text-base"
+                          htmlFor="checkout-7j9-card-name-43j"
+                        >
+                          Confirm Password
+                        </FieldLabel>
+                        <Input
+                          id="checkout-7j9-card-name-43j"
+                          placeholder="Confirm your Password"
+                          required
+                          className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10"
+                        />
+                      </Field>
+                    </div>
                   </FieldGroup>
                 </FieldSet>
                 <Field
@@ -137,12 +150,12 @@ export default function FieldDemo() {
                     Submit
                   </Button>
                   <p className="text-sm md:text-base flex gap-2 text-muted-foreground mt-2">
-                    Don’t have an account?{" "}
+                    Already have an account?{" "}
                     <Link
-                      href="./signuppage"
+                      href="./signinpage"
                       className="text-primary hover:underline underline-offset-4"
                     >
-                      Sign up
+                      Sign In
                     </Link>
                   </p>
                 </Field>

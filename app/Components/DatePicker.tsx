@@ -33,7 +33,7 @@ export function DatePicker() {
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-auto p-0 bg-popover border border-border rounded-md"
+          className="w-full p-0 bg-popover border border-border rounded-md"
           align="start"
         >
           <Calendar

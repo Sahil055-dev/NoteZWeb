@@ -2,21 +2,19 @@
 import Logo from "../Components/Logo";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/app/Components/ThemeToggler";
-import { useMediaQuery } from "./MediaQueryHook";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { Menu } from "lucide-react";
-import SignInPage from "@/app/Authentication/SignInPage/page";
+import useIsSmallScreen from "../hooks/isSmallScreen";
 
 export default function Header() {
-  const isSmallScreen = useMediaQuery("(max-width: 768px)");
+  const isSmallScreen = useIsSmallScreen();
 
   return (
     <header
@@ -40,7 +38,7 @@ export default function Header() {
               variant="ghost"
               className="text-foreground border-primary md:text-md rounded-md hover:bg-primary-hover hover:text-foreground transition"
             >
-              <Link href="../Authentication/SignInPage">Sign In</Link>
+              <Link href="../Authentication/signinpage">Sign In</Link>
             </Button>
             <Button className="bg-primary hover:bg-primary-hover text-foreground md:text-md">
               <Link href="../Authentication/signuppage">Sign Up</Link>

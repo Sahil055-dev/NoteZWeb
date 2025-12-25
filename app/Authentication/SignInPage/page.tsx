@@ -1,42 +1,47 @@
 "use client";
 
-import Header from "@/app/Header/Header";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+} from "@/components/ui/field";
 
-export default function SignInPage() {
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import Header from "@/app/Header/Header";
+import Logo from "@/app/Components/Logo";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/app/Components/DatePicker";
+import { Card } from "@/components/ui/card";
+import useIsSmallScreen from "@/app/hooks/isSmallScreen";
+
+export default function SignUpPage() {
+  const isSmallScreen = useIsSmallScreen();
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* 🧭 Top Navbar */}
-      <Header />
-
-      {/* 🧱 Main Section */}
- <section className="flex flex-1 items-center justify-center px-4 py-16 md:py-32">
+      <section className="flex flex-1 items-center justify-center px-4 py-16 md:py-32">
         <div className="w-full max-w-sm md:max-w-xl lg:max-w-2xl flex flex-col items-center text-center">
           <div className="mb-8 mt-8 md:mt-0">
             <span className="flex gap-4 justify-center items-baseline">
-              <h1 className="text-3xl md:text-4xl font-semibold text-foreground">
+              <h1 className="text-xl md:text-4xl font-semibold text-foreground">
                 Welcome To
               </h1>
-              <Logo size="medium"></Logo>
+              <Logo size={isSmallScreen ? "small" : "medium"} />
             </span>
 
-            <p className="text-muted-foreground mt-2 text-base  md:text-lg">
-              Sign Up to continue — exiciting notes, tasks, and ideas are
+            <p className="text-muted-foreground mt-2 text-sm  md:text-lg">
+              Sign In to continue — exiciting notes, tasks, and ideas are
               waiting for you.
             </p>
           </div>
-          <Card className="w-full p-4 md:p-6 shadow-md border-border bg-card backdrop-blur-sm">
+          <Card className="w-5/6 p-4 md:p-6 shadow-md border-border bg-card backdrop-blur-sm">
             <form className="flex flex-col items-start ">
               <FieldGroup>
                 <FieldSet>
@@ -47,37 +52,6 @@ export default function SignInPage() {
                     All your data is stored securely
                   </FieldDescription>
                   <FieldGroup>
-                    <div className="flex gap-2 ">
-                      <Field>
-                        <FieldLabel
-                          className="text-sm md:text-base"
-                          htmlFor="checkout-7j9-card-name-43j"
-                        >
-                          First Name
-                        </FieldLabel>
-                        <Input
-                          id="checkout-7j9-card-name-43j"
-                          placeholder="Enter your first name"
-                          required
-                          className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10"
-                        />
-                      </Field>
-                      <Field>
-                        <FieldLabel
-                          className="text-sm md:text-base"
-                          htmlFor="checkout-7j9-card-name-43j"
-                        >
-                          Last Name
-                        </FieldLabel>
-                        <Input
-                          id="checkout-7j9-card-name-43j"
-                          placeholder="Enter your last name"
-                          required
-                          className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10"
-                        />
-                      </Field>
-                    </div>
-
                     <Field>
                       <FieldLabel
                         className="text-sm md:text-base"
@@ -92,40 +66,26 @@ export default function SignInPage() {
                         className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10"
                       />
                     </Field>
-                    <Field>
-                      <FieldLabel
-                        className="text-sm md:text-base"
-                        htmlFor="checkout-7j9-card-number-uw1"
-                      >
-                        Date of Birth
-                      </FieldLabel>
-                      <DatePicker />
-                    </Field>
-                    <Field className="flex flex">
-                      <FieldLabel
-                        className="text-sm md:text-base"
-                        htmlFor="checkout-7j9-card-number-uw1"
-                      >
-                        Select Your Role
-                      </FieldLabel>
-                      <RadioGroup className="flex" defaultValue="comfortable">
-                        <p className="text-muted-foreground">
-                          You want to enroll as
-                        </p>
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value="learner" id="r2" />
-                          <Label htmlFor="r2">Learner</Label>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value="mentor" id="r3" />
-                          <Label htmlFor="r3">Mentor</Label>
-                        </div>
-                      </RadioGroup>
-                    </Field>
+                    <div className="flex gap-2 ">
+                      <Field>
+                        <FieldLabel
+                          className="text-sm md:text-base"
+                          htmlFor="checkout-7j9-card-name-43j"
+                        >
+                          Password
+                        </FieldLabel>
+                        <Input
+                          id="checkout-7j9-card-name-43j"
+                          placeholder="Enter your Password"
+                          required
+                          className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10 "
+                        />
+                      </Field>
+                    </div>
                   </FieldGroup>
                 </FieldSet>
                 <Field
-                  className="flex items-center flex-col md:flex-row justify-between"
+                  className="flex items-center flex-col  justify-between mt-4"
                   orientation="horizontal"
                 >
                   <Button

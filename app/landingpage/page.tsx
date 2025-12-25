@@ -393,7 +393,7 @@ export default function LandingPage() {
               </div>
               <div className="text-center md:text-right text-secondary">
                 <p>
-                  © 2024 NotesHub. Empowering students through shared knowledge.
+                  © 2025 NoteZ. Empowering students through shared knowledge.
                 </p>
               </div>
             </div>

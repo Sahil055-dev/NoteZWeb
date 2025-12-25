@@ -200,7 +200,7 @@ export const studentEducationOptions = {
         "Food Microbiology",
         "Nutrition Science",
         "Forensic Techniques",
-
+ 
       ],
     },
   },
@@ -221,7 +221,6 @@ export const mentorOptions = {
         "Bachelor’s",
         "Master’s",
         "Doctorate (PhD)",
-        "Post-Doctoral",
       ],
       branch: [
         "Computer Science and Engineering (CSE)",

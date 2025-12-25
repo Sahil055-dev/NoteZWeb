@@ -21,12 +21,14 @@ type Props = {
   options?: string[]; // subject options to show
   initialSelected?: string[]; // optional initial values
   onSubmit?: (val: string[]) => void; // optional callback when form submitted
+  label?: string;
 };
 
 export default function DialogMultiSelect({
   options = [],
   initialSelected = [],
   onSubmit,
+  label,
 }: Props) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>(initialSelected);
@@ -58,7 +60,7 @@ export default function DialogMultiSelect({
           className="bg-primary/10 hover:bg-primary/20 border-primary/60"
           type="button"
         >
-          Select Subjects
+          {label}
         </Button>
       </DialogTrigger>
 

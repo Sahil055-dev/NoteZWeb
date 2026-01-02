@@ -18,14 +18,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { studentEducationOptions } from "@/app/data/eduOptions"; // Adjust path if needed
 import { UploadCloud } from "lucide-react";
 
+type dataState ={
+  file : File | null;
+  title : string;
+  topic : string;
+  description : string;
+  subject: string;
+}
+
 export default function UploadNoteDialog() {
   const [open, setOpen] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-
-  // Changed to single string instead of array
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [data, setData] = useState<dataState>({
+    file: null,
+    title: "",
+    topic: "",
+    description: "",
+    subject: "",
+  });
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -45,15 +54,15 @@ export default function UploadNoteDialog() {
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
-    setFile(f);
+    setData(prev => ({ ...prev, file: f }));
   };
 
-  const isNameValid = name.trim().length > 0 && name.trim().length <= 16;
-  const isDescValid = description.length <= 200;
+  const isTitleValid = data.title.trim().length > 0 && data.title.trim().length <= 50;
+  const isDescValid = data.description.length <= 200;
 
   // Validation check
   const isFormValid =
-    !!file && isNameValid && !!selectedSubject && isDescValid && !submitting;
+    !!data.file && isTitleValid && !!data.subject && isDescValid && !submitting;
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -62,17 +71,17 @@ export default function UploadNoteDialog() {
 
     try {
       const fd = new FormData();
-      fd.append("file", file as Blob);
-      fd.append("name", name.trim());
-      fd.append("description", description.trim());
-      fd.append("subject", selectedSubject || "");
+      fd.append("file", data.file as Blob);
+      fd.append("title", data.title.trim());
+      fd.append("description", data.description.trim());
+      fd.append("subject", data.subject || ""); 
 
       // Simulate API call
       setTimeout(() => {
         setSubmitting(false);
         setOpen(false);
-        resetForm();
-        console.log("Uploaded:", { name, file, selectedSubject, description });
+        console.log("Uploaded:", { title: data.title, file: data.file, subject: data.subject, description: data.description, timeUploaded: new Date() });
+        setData({ file: null, title: "", topic: "", description: "", subject: "" });
       }, 800);
     } catch (err) {
       setSubmitting(false);
@@ -80,12 +89,6 @@ export default function UploadNoteDialog() {
     }
   };
 
-  const resetForm = () => {
-    setFile(null);
-    setName("");
-    setDescription("");
-    setSelectedSubject(null);
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -96,10 +99,6 @@ export default function UploadNoteDialog() {
         </Button>
       </DialogTrigger>
 
-      {/* sm:max-w-3xl -> Wider on tablet/desktop
-         max-h-[90vh] -> Prevents cutting off on small vertical screens
-         overflow-y-auto -> Internal scrolling
-      */}
       <DialogContent className="sm:max-w-3xl w-[95%] max-h-[90vh] overflow-y-auto flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl md:text-2xl">Upload Note</DialogTitle>
@@ -127,9 +126,9 @@ export default function UploadNoteDialog() {
                     htmlFor="file-upload"
                     className="cursor-pointer flex flex-col items-center gap-2"
                   >
-                    {file ? (
+                    {data.file ? (
                       <div className="bg-primary/10 text-primary px-3 py-1 rounded text-sm font-medium truncate max-w-[200px]">
-                        {file.name}
+                        {data.file.name}
                       </div>
                     ) : (
                       <>
@@ -140,11 +139,11 @@ export default function UploadNoteDialog() {
                       </>
                     )}
                   </label>
-                  {file && (
+                  {data.file && (
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => setFile(null)}
+                      onClick={() => setData(prev => ({ ...prev, file: null }))}
                       className="mt-2 text-destructive h-auto p-0"
                     >
                       Remove
@@ -158,14 +157,14 @@ export default function UploadNoteDialog() {
                 <Label className="text-sm font-medium">
                   Title{" "}
                   <span className="text-muted-foreground text-xs">
-                    (Max 30)
+                    (Max 50)
                   </span>
                 </Label>
                 <Input
                   placeholder="e.g. Binary Trees"
-                  value={name}
-                  maxLength={30}
-                  onChange={(e) => setName(e.target.value)}
+                  value={data.title}
+                  maxLength={50}
+                  onChange={(e) => setData(prev => ({ ...prev, title: e.target.value }))}
                   className="mt-1.5"
                 />
               </div>
@@ -173,14 +172,14 @@ export default function UploadNoteDialog() {
                 <Label className="text-sm font-medium">
                   Topic
                   <span className="text-muted-foreground text-xs">
-                    (Max 24)
+                    (Max 50)
                   </span>
                 </Label>
                 <Input
                   placeholder="e.g. Binary Trees"
-                  value={topic}
-                  maxLength={24}
-                  onChange={(e) => setTopic(e.target.value)}
+                  value={data.topic}
+                  maxLength={50}
+                  onChange={(e) => setData(prev => ({ ...prev, topic: e.target.value }))}
                   className="mt-1.5"
                 />
               </div>
@@ -195,15 +194,15 @@ export default function UploadNoteDialog() {
                 </Label>
                 <Textarea
                   placeholder="Briefly describe what this note covers..."
-                  value={description}
+                  value={data.description}
                   maxLength={200}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => setData(prev => ({ ...prev, description: e.target.value }))}
                   className="mt-1.5 resize-none"
                   rows={4}
                 />
                 <div className="flex justify-end mt-1">
                   <span className="text-[10px] text-muted-foreground">
-                    {description.length}/200
+                    {data.description.length}/200
                   </span>
                 </div>
               </div>
@@ -222,11 +221,11 @@ export default function UploadNoteDialog() {
                 ) : (
                   <div className="h-[40vh] overflow-y-auto pr-2 custom-scrollbar grid grid-cols-1 gap-1">
                     {subjectOptions.map((s) => {
-                      const isSelected = selectedSubject === s;
+                      const isSelected = data.subject === s;
                       return (
                         <div
                           key={s}
-                          onClick={() => setSelectedSubject(s)}
+                          onClick={() => setData(prev => ({ ...prev, subject: s }))}
                           className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer text-sm transition-all ${
                             isSelected
                               ? "bg-primary text-primary-foreground font-medium shadow-sm"

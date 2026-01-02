@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { studentEducationOptions } from "@/app/data/eduOptions";
 import SelectMenuField from "../EducationSelectMenu";
@@ -16,6 +17,7 @@ import {
 import Logo from "@/app/Components/Logo";
 import useIsSmallScreen from "@/app/hooks/isSmallScreen";
 import DialogMultiSelect from "../subjectModal";
+import supabase from "@/app/API/supabase";
 
 type OptionsState = {
   branchOptions: string[];
@@ -29,8 +31,10 @@ type SelectedState = {
   subjectTags: string[];
 };
 
-export default function StudentSignUp() {
+export default function AdditionalDetails() {
   const isSmallScreen = useIsSmallScreen();
+  const router = useRouter();
+
   const [options, setOptions] = useState<OptionsState>({
     branchOptions: [],
     subjectOptions: [],
@@ -42,8 +46,6 @@ export default function StudentSignUp() {
     universityTier: "",
     subjectTags: [],
   });
-
-  const [subjectTagsSelected, setSubjectTagsSelected] = useState<string[]>([]);
 
   const handleEducationChange = (selectedType: string) => {
     setSelectedOptions((prev) => ({ ...prev, educationField: selectedType }));
@@ -68,9 +70,43 @@ export default function StudentSignUp() {
     setSelectedOptions((prev) => ({ ...prev, [field]: val }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitted options:", selectedOptions);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // --- JOB 1: Save Data to Table ---
+    const { error: dbError } = await supabase
+      .from("profiles")
+      .update({
+        educationField: selectedOptions.educationField,
+        branch: selectedOptions.branch,
+        universityTier: selectedOptions.universityTier,
+        subjectTags: selectedOptions.subjectTags,
+      })
+      .eq("id", user.id);
+
+    if (dbError) {
+      console.error("Failed to save details:", dbError);
+      return; // Stop here if DB save fails
+    }
+
+    // --- JOB 2: Update Metadata for Routing ---
+    // This updates the user session immediately
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { areDetailsFilled: true },
+    });
+
+    if (authError) {
+      console.error("Failed to update status:", authError);
+      return;
+    }
+
+    // Success!
+    router.push(".././mainpages/dashboard");
   };
 
   return (
@@ -97,12 +133,12 @@ export default function StudentSignUp() {
               transition={{ duration: 0.2 }}
               onSubmit={handleSubmit}
             >
-              <FieldGroup>
-                <FieldSet>
-                  <FieldLegend className="text-lg md:text-xl">
+              <FieldGroup className="w-full">
+                <FieldSet className="w-full">
+                  <FieldLegend className="text-lg md:text-xl text-center">
                     Academic Details
                   </FieldLegend>
-                  <FieldDescription className="text-base md:text-lg">
+                  <FieldDescription className="text-base text-center">
                     This data helps us show the best content for your field
                   </FieldDescription>
 
@@ -149,26 +185,41 @@ export default function StudentSignUp() {
                       </FieldDescription>
                     ) : (
                       <div className="flex flex-col md:flex-row items-center justify-between ">
-                        <p className="text-muted-foreground">
-                          Add subjects you are interested in 
+                        <p className="text-muted-foreground mb-2 md:mb-0">
+                          Add subjects you are interested in
                         </p>
                         <DialogMultiSelect
                           options={options.subjectOptions}
                           initialSelected={selectedOptions.subjectTags}
                           onSubmit={(val) => handleSelect(val, "subjectTags")}
-                          label = {selectedOptions.subjectTags.length > 0 ? `Selected Subjects (${selectedOptions.subjectTags.length})` : "Select Subjects"}
+                          label={
+                            selectedOptions.subjectTags.length > 0
+                              ? `Selected Subjects (${selectedOptions.subjectTags.length})`
+                              : "Select Subjects"
+                          }
                         />
                       </div>
-                    
                     )}
                   </div>
                 </FieldSet>
 
                 {/* Buttons */}
-                <Field orientation="horizontal" className="mt-6 gap-3">
-                  <Button type="submit">Submit</Button>
-                  <Button variant="outline" type="button">
+                <Field
+                  orientation="horizontal"
+                  className="mt-6 gap-3 flex w-full justify-end"
+                >
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => router.back()}
+                  >
                     Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={!selectedOptions.educationField}
+                  >
+                    Complete Profile
                   </Button>
                 </Field>
               </FieldGroup>

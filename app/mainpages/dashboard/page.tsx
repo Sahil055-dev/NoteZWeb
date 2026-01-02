@@ -18,10 +18,13 @@ import {
 import NoteCard from "./components/NoteCard";
 import QuickActions from "./components/QuickActions";
 import NoteSummaryDialog from "./components/NoteSummaryDialog";
-
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/components/context/AuthProvider";
+
 
 const Dashboard = () => {
+   const { user, isLoading } = useAuth();
+
   const [selectedNote, setSelectedNote] = useState<any>(null);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -130,7 +133,7 @@ const Dashboard = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             Aloha!{" "}
             <span className="text-primary text-shadow-xs text-shadow-amber-600">
-              Student
+              {user?.user_metadata?.firstName || "User"}
             </span>
           </h1>
           <p className="text-muted-foreground mt-1 text-center">

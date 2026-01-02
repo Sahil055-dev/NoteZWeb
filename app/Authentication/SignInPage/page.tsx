@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
   FieldDescription,
@@ -11,14 +10,9 @@ import {
   FieldSeparator,
   FieldSet,
 } from "@/components/ui/field";
-
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import Header from "@/app/Header/Header";
 import Logo from "@/app/Components/Logo";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { DatePicker } from "@/app/Components/DatePicker";
 import { Card } from "@/components/ui/card";
 import useIsSmallScreen from "@/app/hooks/isSmallScreen";
 

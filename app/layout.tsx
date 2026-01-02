@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
-import { Inknut_Antiqua } from "next/font/google";
-import { Jost } from "next/font/google";
+import { Inknut_Antiqua, Jost } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
-import HeaderWrapper from "./Header/HeaderWrapper"; 
+import HeaderWrapper from "./Header/HeaderWrapper";
+import AuthProvider from "@/components/context/AuthProvider";
+import ClientAuthGuard from "./ClientAuthGuard";
 
 const jost = Jost({
   subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  weight: ["100","200","300","400","500","600","700","800","900"],
   variable: "--font-jost",
 });
 
 const inknut = Inknut_Antiqua({
   subsets: ["latin"],
-  weight: ["400", "700", "500", "300"],
+  weight: ["300","400","500","700"],
   variable: "--font-inknut",
 });
- 
 
 export const metadata: Metadata = {
   title: "Notez",
@@ -30,11 +30,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${jost.variable} ${inknut.variable} font-mono `}>
-        {/* ✅ Place ThemeProvider here */}
+      <body className={`${jost.variable} ${inknut.variable} font-mono`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <HeaderWrapper/>
-          {children}
+          <AuthProvider>
+            <ClientAuthGuard>
+              <HeaderWrapper />
+              {children}
+            </ClientAuthGuard>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -22,20 +22,29 @@ import useIsSmallScreen from "../hooks/isSmallScreen";
 import { Bell, FileUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/context/AuthProvider";
+import { User } from "@supabase/supabase-js";
 
 interface MainHeaderProps {
   isSmallScreen?: boolean;
   currentPath?: string;
+  user: User | null;
 }
 
 export default function MainHeader({
   isSmallScreen,
   currentPath,
+  user,
 }: MainHeaderProps) {
+  let initials = "U";
+  if (user && user.user_metadata) {
+    const firstName = user.user_metadata.firstName || "";
+    const lastName = user.user_metadata.lastName || "";
+    initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  }
   if (currentPath?.includes("/loading")) {
     return null;
   }
-  if (currentPath?.startsWith("/mainpages")) {
+  if (user) {
     return (
       <header
         className="
@@ -58,14 +67,14 @@ export default function MainHeader({
                 {/* Upload Button */}
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="text-foreground border-primary md:text-md rounded-md hover:bg-primary/20 hover:text-foreground transition"
-                    >
-                      <Link href="../mainpages/uploadpage">
+                    <Link href="/mainpages/uploadpage">
+                      <Button
+                        variant="ghost"
+                        className="text-foreground border-primary md:text-md rounded-md hover:bg-primary/20 hover:text-foreground transition"
+                      >
                         <FileUp />
-                      </Link>
-                    </Button>
+                      </Button>
+                    </Link>
                   </TooltipTrigger>
                   <TooltipContent
                     side="bottom"
@@ -103,7 +112,7 @@ export default function MainHeader({
                       className="flex rounded-full w-8 h-8 border-primary bg-primary/50 justify-center items-center border hover:bg-primary-hover transition"
                     >
                       <Link href="../mainpages/profilepage">
-                        <p>SM</p>
+                        <p>{initials}</p>
                       </Link>
                     </Button>
                   </TooltipTrigger>

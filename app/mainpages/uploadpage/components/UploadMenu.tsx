@@ -15,21 +15,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { studentEducationOptions } from "@/app/data/eduOptions"; // Adjust path if needed
+import { studentEducationOptions } from "@/app/data/eduOptions";
 import { UploadCloud } from "lucide-react";
+import { toast } from "sonner";
+import supabase from "@/app/API/supabase";
+import { useAuth } from "@/components/context/AuthProvider";
 
-type dataState ={
-  file : File | null;
-  title : string;
-  topic : string;
-  description : string;
+type dataState = {
+  file: File;
+  title: string;
+  topic: string;
+  description: string;
   subject: string;
-}
+};
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function UploadNoteDialog() {
+  // const user = useAuth();
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<dataState>({
-    file: null,
+    file: undefined as unknown as File,
     title: "",
     topic: "",
     description: "",
@@ -51,13 +56,25 @@ export default function UploadNoteDialog() {
     });
     return all;
   }, []);
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    setData(prev => ({ ...prev, file: f }));
+    if (f.type !== "application/pdf") {
+      toast.info("Only PDF files are allowed");
+      return;
+    }
+
+    if (f.size > MAX_FILE_SIZE) {
+      toast.info("File exceeds 5MB size limit.");
+      return;
+    }
+
+    setData((prev) => ({ ...prev, file: f }));
   };
 
-  const isTitleValid = data.title.trim().length > 0 && data.title.trim().length <= 50;
+  const isTitleValid =
+    data.title.trim().length > 0 && data.title.trim().length <= 50;
   const isDescValid = data.description.length <= 200;
 
   // Validation check
@@ -68,27 +85,55 @@ export default function UploadNoteDialog() {
     e?.preventDefault();
     if (!isFormValid) return;
     setSubmitting(true);
-
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     try {
-      const fd = new FormData();
-      fd.append("file", data.file as Blob);
-      fd.append("title", data.title.trim());
-      fd.append("description", data.description.trim());
-      fd.append("subject", data.subject || ""); 
+      const fileName = `${Date.now()}.${data.file?.name.split(".").pop()}`;
+      const filePath = `${user?.id}/${fileName}`;
 
-      // Simulate API call
-      setTimeout(() => {
-        setSubmitting(false);
-        setOpen(false);
-        console.log("Uploaded:", { title: data.title, file: data.file, subject: data.subject, description: data.description, timeUploaded: new Date() });
-        setData({ file: null, title: "", topic: "", description: "", subject: "" });
-      }, 800);
-    } catch (err) {
-      setSubmitting(false);
+      const { error: uploadError } = await supabase.storage
+        .from("note_bucket") // Make sure this matches your bucket name exactly
+        .upload(filePath, data.file);
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("note_bucket").getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase.from("notes").insert({
+        title: data.title,
+        topic: data.topic,
+        description: data.description,
+        subject: data.subject,
+        file_url: publicUrl,
+        file_path: filePath,
+        user_id: user?.id,
+      });
+
+      if (dbError) throw dbError;
+
+      // Success!
+      toast.success("Note uploaded successfully!");
+      setOpen(false);
+      
+      // Reset Form
+      setData({
+        file: undefined as unknown as File,
+        title: "",
+        topic: "",
+        description: "",
+        subject: "",
+      });
+
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || "Something went wrong during upload");
+    } finally {
+      setSubmitting(false);
     }
   };
-
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -120,8 +165,9 @@ export default function UploadNoteDialog() {
                     type="file"
                     onChange={onFileChange}
                     className="hidden"
-                    accept=".pdf,.png,.jpg,.docx"
+                    accept=".pdf"
                   />
+
                   <label
                     htmlFor="file-upload"
                     className="cursor-pointer flex flex-col items-center gap-2"
@@ -135,6 +181,9 @@ export default function UploadNoteDialog() {
                         <UploadCloud className="h-8 w-8 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">
                           Click to browse file
+                          <p className="text-xs">
+                            (PDF should be less than 5MB)
+                          </p>
                         </span>
                       </>
                     )}
@@ -143,7 +192,9 @@ export default function UploadNoteDialog() {
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => setData(prev => ({ ...prev, file: null }))}
+                      onClick={() =>
+                        setData((prev) => ({ ...prev, file: null }))
+                      }
                       className="mt-2 text-destructive h-auto p-0"
                     >
                       Remove
@@ -164,7 +215,9 @@ export default function UploadNoteDialog() {
                   placeholder="e.g. Binary Trees"
                   value={data.title}
                   maxLength={50}
-                  onChange={(e) => setData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) =>
+                    setData((prev) => ({ ...prev, title: e.target.value }))
+                  }
                   className="mt-1.5"
                 />
               </div>
@@ -179,7 +232,9 @@ export default function UploadNoteDialog() {
                   placeholder="e.g. Binary Trees"
                   value={data.topic}
                   maxLength={50}
-                  onChange={(e) => setData(prev => ({ ...prev, topic: e.target.value }))}
+                  onChange={(e) =>
+                    setData((prev) => ({ ...prev, topic: e.target.value }))
+                  }
                   className="mt-1.5"
                 />
               </div>
@@ -196,7 +251,12 @@ export default function UploadNoteDialog() {
                   placeholder="Briefly describe what this note covers..."
                   value={data.description}
                   maxLength={200}
-                  onChange={(e) => setData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   className="mt-1.5 resize-none"
                   rows={4}
                 />
@@ -225,7 +285,9 @@ export default function UploadNoteDialog() {
                       return (
                         <div
                           key={s}
-                          onClick={() => setData(prev => ({ ...prev, subject: s }))}
+                          onClick={() =>
+                            setData((prev) => ({ ...prev, subject: s }))
+                          }
                           className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer text-sm transition-all ${
                             isSelected
                               ? "bg-primary text-primary-foreground font-medium shadow-sm"

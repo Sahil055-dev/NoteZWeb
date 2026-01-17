@@ -8,6 +8,7 @@ interface NoteCardProps {
   topic: string;
   downloads: number;
   date: string;
+  author : string;
   onClick?: () => void;
 }
 
@@ -17,6 +18,8 @@ const NoteCard = ({
   topic,
   downloads,
   date,
+  author,
+
   onClick,
 }: NoteCardProps) => {
   return (

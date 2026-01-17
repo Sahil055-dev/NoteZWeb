@@ -12,12 +12,13 @@ export default function ClientAuthGuard({
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+const unauthenticatedPaths = ["/", "/Authentication/signinpage", "/Authentication/signuppage"];
 
   useEffect(() => {
     if (isLoading) return;
 
     // 🔒 Unauthenticated → only allow landing page
-    if (!user && pathname !== "/") {
+    if (!user && !unauthenticatedPaths.includes(pathname)) {
       router.replace("/");
     }
 

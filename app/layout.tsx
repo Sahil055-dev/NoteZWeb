@@ -4,17 +4,17 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import HeaderWrapper from "./Header/HeaderWrapper";
 import AuthProvider from "@/components/context/AuthProvider";
-import ClientAuthGuard from "./ClientAuthGuard";
+import { Toaster } from "@/components/ui/sonner"
 
 const jost = Jost({
   subsets: ["latin"],
-  weight: ["100","200","300","400","500","600","700","800","900"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
   variable: "--font-jost",
 });
 
 const inknut = Inknut_Antiqua({
   subsets: ["latin"],
-  weight: ["300","400","500","700"],
+  weight: ["300", "400", "500", "700"],
   variable: "--font-inknut",
 });
 
@@ -33,10 +33,9 @@ export default function RootLayout({
       <body className={`${jost.variable} ${inknut.variable} font-mono`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            <ClientAuthGuard>
-              <HeaderWrapper />
-              {children}
-            </ClientAuthGuard>
+            <HeaderWrapper />
+            {children}
+            <Toaster position="bottom-center" />
           </AuthProvider>
         </ThemeProvider>
       </body>

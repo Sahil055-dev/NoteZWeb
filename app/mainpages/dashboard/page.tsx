@@ -20,10 +20,11 @@ import QuickActions from "./components/QuickActions";
 import NoteSummaryDialog from "./components/NoteSummaryDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/components/context/AuthProvider";
+import { toast } from "sonner"
 
 
 const Dashboard = () => {
-   const { user, isLoading } = useAuth();
+  const { user } = useAuth();
 
   const [selectedNote, setSelectedNote] = useState<any>(null);
 
@@ -134,11 +135,13 @@ const Dashboard = () => {
             Aloha!{" "}
             <span className="text-primary text-shadow-xs text-shadow-amber-600">
               {user?.user_metadata?.firstName || "User"}
+      
             </span>
           </h1>
           <p className="text-muted-foreground mt-1 text-center">
             Here's what's happening with your notes today.
           </p>
+          <Button onClick={() => toast.info("File Should be greater than 5MB")}>Hello</Button>
         </div>
 
         {/* Top Row: Stats + Subjects + Quick Actions */}

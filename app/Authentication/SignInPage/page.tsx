@@ -7,7 +7,6 @@ import {
   FieldGroup,
   FieldLabel,
   FieldLegend,
-  FieldSeparator,
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -15,9 +14,65 @@ import Link from "next/link";
 import Logo from "@/app/Components/Logo";
 import { Card } from "@/components/ui/card";
 import useIsSmallScreen from "@/app/hooks/isSmallScreen";
+import { useState, useEffect } from "react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
+import supabase from "@/app/API/supabase";
+import { useRouter } from "next/navigation";
+
+type formDataType = {
+  email: string;
+  password: string;
+};
 
 export default function SignUpPage() {
+  const router = useRouter();
   const isSmallScreen = useIsSmallScreen();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState<{ show: boolean }>({
+    show: false,
+  });
+  const [formData, setFormData] = useState<formDataType>({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      setIsLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setIsLoading(false);
+      return;
+    }
+
+    // Redirect to the Details Page
+    router.push("/mainpages/dashboard");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <section className="flex flex-1 items-center justify-center px-4 py-16 md:py-32">
@@ -36,7 +91,7 @@ export default function SignUpPage() {
             </p>
           </div>
           <Card className="w-5/6 p-4 md:p-6 shadow-md border-border bg-card backdrop-blur-sm">
-            <form className="flex flex-col items-start ">
+            <form className="flex flex-col items-start " onSubmit={handleSubmit}>
               <FieldGroup>
                 <FieldSet>
                   <FieldLegend>
@@ -54,26 +109,51 @@ export default function SignUpPage() {
                         Email Address
                       </FieldLabel>
                       <Input
+                        name="email"
                         id="checkout-7j9-card-number-uw1"
                         placeholder="example@gmail.com"
+                        value={formData.email}
+                        onChange={handleChange}
                         required
+                        type="email"
                         className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10"
                       />
                     </Field>
                     <div className="flex gap-2 ">
-                      <Field>
-                        <FieldLabel
-                          className="text-sm md:text-base"
-                          htmlFor="checkout-7j9-card-name-43j"
-                        >
+                      <Field className="w-full">
+                        <FieldLabel className="text-sm md:text-base">
                           Password
                         </FieldLabel>
-                        <Input
-                          id="checkout-7j9-card-name-43j"
-                          placeholder="Enter your Password"
-                          required
-                          className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10 "
-                        />
+                        <div className="relative">
+                          <Input
+                            name="password"
+                            // 1. Toggle type based on state
+                            type={showPassword.show ? "text" : "password"}
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Enter your Password"
+                            required
+                            // 2. Add padding-right (pr-10) so text doesn't overlap the icon
+                            className="bg-card border-primary/50 hover:bg-primary/10 dark:hover:bg-primary/10 pr-10"
+                          />
+                          {/* 3. Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPassword((prev) => ({
+                                ...prev,
+                                show: !prev.show,
+                              }))
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showPassword.show ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </Field>
                     </div>
                   </FieldGroup>
@@ -85,8 +165,15 @@ export default function SignUpPage() {
                   <Button
                     className="w-2/5 bg-primary hover:bg-primary-hover text-foreground text-sm md:text-base"
                     type="submit"
+                   
                   >
-                    Submit
+                    {isLoading ? (
+                      <span className=" w-full flex gap-4 items-center">
+                        <Spinner className="size-4" /> Submitting
+                      </span>
+                    ) : (
+                      " Submit"
+                    )}
                   </Button>
                   <p className="text-sm md:text-base flex gap-2 text-muted-foreground mt-2">
                     Don’t have an account?{" "}
@@ -99,6 +186,12 @@ export default function SignUpPage() {
                   </p>
                 </Field>
               </FieldGroup>
+              {error && (
+                <Alert variant="destructive" className="mb-6 text-start">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
             </form>
           </Card>
         </div>

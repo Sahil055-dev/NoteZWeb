@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Users } from "lucide-react";
 import Logo from "./Components/Logo";
+import RootButtonsGroup from "@/components/RootComponents/ButtonGroup";
 
 
 export default function Home() {
@@ -39,22 +40,7 @@ export default function Home() {
                 mentor-verified notes. Navigate by university, field, year,
                 subject, and topic with ease.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4">
-                <Button
-                  size="lg"
-                  className="bg-primary hover:opacity-90 font-semibold text-lg h-14 px-8 shadow-glow"
-                >
-                  Get Started Free
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-primary/20 hover:bg-primary-hover/10 hover:border-none font-semibold text-lg h-14 px-8 border-2"
-                >
-                  Browse Notes
-                </Button>
-              </div>
+             <RootButtonsGroup type="above" ></RootButtonsGroup> 
             </div>
           </section>
 
@@ -364,23 +350,7 @@ export default function Home() {
                 Join community of students already benefiting from quality,
                 verified notes
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="bg-foreground dark:bg-background text-background dark:text-foreground hover:bg-foreground/90 hover:text-primary dark:hover:bg-amber-950/90 dark:hover:text-amber-500 font-semibold text-lg h-14 px-8"
-                >
-                  Sign Up Now
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="font-semibold text-lg h-14 px-8 border-2 border-primary-foreground text-primary-foreground hover:bg-primary-hover dark:bg-foreground dark:text-background hover:text-primary-hover"
-                >
-                  Learn More
-                </Button>
-              </div>
+              <RootButtonsGroup type="below"></RootButtonsGroup>
             </div>
           </section>
 

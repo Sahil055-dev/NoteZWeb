@@ -19,7 +19,8 @@ import { studentEducationOptions } from "@/app/data/eduOptions";
 import { UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import supabase from "@/app/API/supabase";
-import { useAuth } from "@/components/context/AuthProvider";
+import { compressPdf } from "@/app/utilities/compressPDF";
+import { Spinner } from "@/components/ui/spinner";
 
 type dataState = {
   file: File;
@@ -32,7 +33,13 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function UploadNoteDialog() {
   // const user = useAuth();
+
   const [open, setOpen] = useState(false);
+  // Add specific state for the current action
+  const [status, setStatus] = useState<
+    "idle" | "compressing" | "uploading" | "saving"
+  >("idle");
+
   const [data, setData] = useState<dataState>({
     file: undefined as unknown as File,
     title: "",
@@ -42,6 +49,10 @@ export default function UploadNoteDialog() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // 2. Add this filtering logic (before the return statement)
 
   // Flatten subject options
   const subjectOptions = useMemo(() => {
@@ -56,6 +67,14 @@ export default function UploadNoteDialog() {
     });
     return all;
   }, []);
+
+  const filteredSubjects = useMemo(() => {
+    if (!searchTerm) return subjectOptions;
+    return subjectOptions.filter((s) =>
+      s.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [subjectOptions, searchTerm]);
+
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -84,19 +103,40 @@ export default function UploadNoteDialog() {
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!isFormValid) return;
-    setSubmitting(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+
     try {
-      const fileName = `${Date.now()}.${data.file?.name.split(".").pop()}`;
-      const filePath = `${user?.id}/${fileName}`;
+      if (!data.file) throw new Error("No file selected");
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Please login to upload");
+
+      // --- PHASE 1: COMPRESSION ---
+      setStatus("compressing"); // Update UI to show "Compressing..."
+
+      // Wait for the compression promise to fulfill
+      const fileToUpload = await compressPdf(data.file);
+
+      console.log(
+        `Original: ${data.file.size}, Compressed: ${fileToUpload.size}`
+      );
+
+      // --- PHASE 2: UPLOAD ---
+      setStatus("uploading");
+
+      const fileExt = fileToUpload.name.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("note_bucket") // Make sure this matches your bucket name exactly
-        .upload(filePath, data.file);
+        .from("note_bucket")
+        .upload(filePath, fileToUpload); // Upload the COMPRESSED file
 
       if (uploadError) throw uploadError;
+
+      // --- PHASE 3: DATABASE SAVE ---
+      setStatus("saving");
 
       const {
         data: { publicUrl },
@@ -109,16 +149,14 @@ export default function UploadNoteDialog() {
         subject: data.subject,
         file_url: publicUrl,
         file_path: filePath,
-        user_id: user?.id,
+        user_id: user.id,
       });
 
       if (dbError) throw dbError;
 
-      // Success!
-      toast.success("Note uploaded successfully!");
+      // --- FINISH ---
+      toast.success("File uploaded successfully!");
       setOpen(false);
-      
-      // Reset Form
       setData({
         file: undefined as unknown as File,
         title: "",
@@ -126,12 +164,11 @@ export default function UploadNoteDialog() {
         description: "",
         subject: "",
       });
-
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Something went wrong during upload");
+      toast.error(err.message || "Upload failed");
     } finally {
-      setSubmitting(false);
+      setStatus("idle"); // Reset status
     }
   };
 
@@ -144,7 +181,10 @@ export default function UploadNoteDialog() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-3xl w-[95%] max-h-[90vh] overflow-y-auto flex flex-col">
+      <DialogContent
+        className="sm:max-w-3xl w-[95%] max-h-[90vh] overflow-y-auto flex flex-col"
+        showCloseButton={status !== "idle" ? false : true}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl md:text-2xl">Upload Note</DialogTitle>
           <DialogDescription>
@@ -193,7 +233,10 @@ export default function UploadNoteDialog() {
                       variant="link"
                       size="sm"
                       onClick={() =>
-                        setData((prev) => ({ ...prev, file: null }))
+                        setData((prev) => ({
+                          ...prev,
+                          file: undefined as unknown as File,
+                        }))
                       }
                       className="mt-2 text-destructive h-auto p-0"
                     >
@@ -268,19 +311,35 @@ export default function UploadNoteDialog() {
               </div>
             </div>
 
-            {/* Right Column: Subject Selection (Single Select) */}
+            {/* Right Column: Subject Selection */}
             <div className="flex flex-col h-full">
               <Label className="text-sm font-medium mb-2">
                 Subject Category
               </Label>
-              <div className="flex-1 border rounded-md p-3 bg-muted/10 overflow-y-auto max-h-[300px] md:max-h-full">
-                {subjectOptions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No subjects found.
-                  </p>
+
+              {/* Search Input */}
+              <div className="mb-2 relative">
+                <Input
+                  placeholder="Search subjects..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+
+              {/* FIX: 
+                  1. Removed 'md:max-h-full' and 'flex-1'.
+                  2. Added fixed height 'h-[300px] md:h-[400px]'. 
+                     This forces the scrollbar to appear when content exceeds this height.
+              */}
+              <div className="border rounded-md p-3 bg-muted/10 overflow-y-auto h-[330px] custom-scrollbar">
+                {filteredSubjects.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                    <p className="text-sm">No matches found.</p>
+                  </div>
                 ) : (
-                  <div className="h-[40vh] overflow-y-auto pr-2 custom-scrollbar grid grid-cols-1 gap-1">
-                    {subjectOptions.map((s) => {
+                  <div className="grid grid-cols-1 gap-1 content-start">
+                    {filteredSubjects.map((s) => {
                       const isSelected = data.subject === s;
                       return (
                         <div
@@ -294,7 +353,7 @@ export default function UploadNoteDialog() {
                               : "hover:bg-background hover:shadow-sm text-muted-foreground"
                           }`}
                         >
-                          {s}
+                          <span>{s}</span>
                           {isSelected && (
                             <div className="h-2 w-2 rounded-full bg-white" />
                           )}
@@ -307,18 +366,36 @@ export default function UploadNoteDialog() {
             </div>
           </div>
 
-          <DialogFooter className="pt-2 sm:justify-end gap-2">
-            <DialogClose asChild>
-              <Button variant="outline" type="button">
-                Cancel
-              </Button>
-            </DialogClose>
+          <DialogFooter>
             <Button
               type="submit"
-              disabled={!isFormValid}
-              className="bg-primary text-primary-foreground min-w-[120px]"
+              disabled={status !== "idle" || !isFormValid}
+              className="bg-primary text-primary-foreground min-w-[140px]"
             >
-              {submitting ? "Uploading..." : "Upload Note"}
+              {status === "compressing" && (
+                <span className="flex items-center justify-center ">
+                  <Spinner className="size-6 mr-2 text-foreground"></Spinner>
+                  Compressing PDF
+                </span>
+              )}
+              {status === "uploading" && (
+                <span className="flex items-center justify-center ">
+                  <Spinner className="size-6 mr-2 text-foreground"></Spinner>
+                  Uploading
+                </span>
+              )}
+              {status === "saving" && (
+                <span className="flex items-center justify-center">
+                  <Spinner className="size-6"></Spinner>
+                  Saving...
+                </span>
+              )}
+              {status === "idle" && (
+                <span className="flex items-center justify-center">
+                  <UploadCloud className="mr-2 size-5" />
+                  Upload Note
+                </span>
+              )}
             </Button>
           </DialogFooter>
         </form>

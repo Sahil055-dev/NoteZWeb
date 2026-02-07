@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -13,6 +13,9 @@ import {
   Eraser,
   ArrowBigLeft,
   ArrowBigRight,
+  ChevronLeft,
+  ChevronRight,
+  BotMessageSquare
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggler";
 import useIsSmallScreen from "../hooks/isSmallScreen";
@@ -45,16 +48,20 @@ const COLORS = [
 
 const SIZES = [8, 14, 22];
 const FIXED_OPACITY = 0.4;
-
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 2.0;
+const ZOOM_STEP = 0.1;
 // ---------------- COMPONENT ----------------
 export default function PdfViewer() {
   const isSmallScreen = useIsSmallScreen();
+
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
 
   const [tool, setTool] = useState<Tool>("select");
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
+  const [zoom, setZoom] = useState(1); // 1 = 100%
 
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [current, setCurrent] = useState<Stroke | null>(null);
@@ -73,6 +80,8 @@ export default function PdfViewer() {
 
   // ---------------- MOUSE EVENTS ----------------
   function onMouseDown(e: React.MouseEvent) {
+    if (tool === "select") return; // 🔑 allow native selection
+
     const p = getPoint(e);
 
     if (tool === "brush") {
@@ -91,16 +100,16 @@ export default function PdfViewer() {
   }
 
   function onMouseMove(e: React.MouseEvent) {
+    if (tool === "select") return; // 🔑 critical
+
     const p = getPoint(e);
 
-    // draw
     if (tool === "brush" && current) {
       setCurrent((prev) =>
         prev ? { ...prev, path: `${prev.path} L ${p.x} ${p.y}` } : prev,
       );
     }
 
-    // erase
     if (tool === "eraser" && erasing) {
       setStrokes((prev) =>
         prev.filter((stroke) => {
@@ -115,13 +124,43 @@ export default function PdfViewer() {
   }
 
   function onMouseUp() {
+    if (tool === "select") return; // 🔑
+
     if (current) {
       setStrokes((prev) => [...prev, current]);
       setCurrent(null);
     }
     setErasing(false);
   }
-  const iconClass = "h-2 w-2 lg:h-4 w-4"
+
+  function onWheel(e: React.WheelEvent) {
+    if (!e.ctrlKey) return;
+
+    e.preventDefault();
+
+    setZoom((z) =>
+      Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z - e.deltaY * 0.001)),
+    );
+  }
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handler = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+    };
+
+    el.addEventListener("wheel", handler, { passive: false });
+
+    return () => {
+      el.removeEventListener("wheel", handler);
+    };
+  }, []);
+
+  const iconClass = "h-2 w-2 lg:h-4 w-4";
+  const BASE_WIDTH = isSmallScreen ? 360 : 535;
+  const pageWidth = BASE_WIDTH * zoom;
   // ---------------- RENDER ----------------
   return (
     <div className="flex flex-col mt-2 items-center ">
@@ -136,7 +175,7 @@ export default function PdfViewer() {
           },
         }}
         className="flex fixed top-1 bg-background/40 backdrop-blur-xs 
-        z-50 inset-ring-1 inset-ring-secondary/60 justify-around w-full lg:w-1/2"
+        z-50 inset-ring-1 inset-ring-secondary/60 justify-around w-full "
       >
         <motion.div
           layout
@@ -156,7 +195,7 @@ export default function PdfViewer() {
               variant={tool === "brush" ? "default" : "ghost"}
               onClick={() => setTool("brush")}
             >
-              <Brush className={iconClass}   />
+              <Brush className={iconClass} />
             </Button>
 
             <Button
@@ -221,25 +260,52 @@ export default function PdfViewer() {
           </span>
           <div className="flex items-center gap-2 text-sm">
             <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z - ZOOM_STEP))}
+            >
+              −
+            </Button>
+
+            <span className="text-xs w-12 text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + ZOOM_STEP))}
+            >
+              +
+            </Button>
+            <Button
               variant={"ghost"}
               size="sm"
-              onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+              onClick={() => setPageNumber((p) => Math.max(1, p - 2))}
             >
-              <ArrowBigLeft className={iconClass} />
+              <ChevronLeft className={iconClass} />
             </Button>
-            <span className="xl:text-base text-sm">
-              Page {pageNumber} / {numPages}
-            </span>
+            <motion.div layout="position" className="shrink-0">
+              <p className="text-sm xl:text-md  text-center">
+                Page {pageNumber} - {pageNumber + 1} / {numPages}
+              </p>
+            </motion.div>
             <Button
               variant={"ghost"}
               size="sm"
               onClick={() =>
-                setPageNumber((p) => Math.min(numPages || 1, p + 1))
+                setPageNumber((p) => Math.min((numPages ?? 1) - 1, p + 2))
               }
             >
-              <ArrowBigRight className={iconClass} />
+              <ChevronRight className={iconClass} />
             </Button>
 
+            <Button variant={"ghost"} className=" hover:bg-primary/10 px-4">
+              <BotMessageSquare className={"w-4 h-4 text-primary"} />
+               <p className="text-shadow-amber-200 text-secondary/80">
+                AI Workspace
+                </p>
+            </Button>
             <Button variant={"outline"} className="hover:bg-primary/10 px-4">
               Save
             </Button>
@@ -248,10 +314,10 @@ export default function PdfViewer() {
         </motion.div>
       </motion.div>
 
-      {/* Viewer */}
       <div
         ref={containerRef}
-        className={`relative mt-16 border shadow ${
+        onWheel={onWheel}
+        className={`relative mt-20 ${
           tool === "select" ? "select-text" : "select-none"
         }`}
         onMouseDown={onMouseDown}
@@ -259,26 +325,58 @@ export default function PdfViewer() {
         onMouseUp={onMouseUp}
       >
         <Document file="/test.pdf" onLoadSuccess={onDocumentLoadSuccess}>
-          <Page pageNumber={pageNumber} width={isSmallScreen ? 500 : 625} />
-        </Document>
+          <div className="w-full ">
+            <div className="flex gap-4 w-fit mx-auto">
+              {/* LEFT PAGE */}
+              <div className="relative border border-secondary/30">
+                <Page pageNumber={pageNumber} width={pageWidth} />
 
-        {/* Highlight Layer */}
-        <svg className=" absolute inset-0 h-full w-full pointer-events-none">
-          {[...strokes, ...(current ? [current] : [])]
-            .filter((s) => s.page === pageNumber)
-            .map((s) => (
-              <path
-                key={s.id}
-                d={s.path}
-                stroke={s.color}
-                strokeWidth={s.size}
-                strokeLinecap="square"
-                strokeLinejoin="miter"
-                fill="none"
-                opacity={FIXED_OPACITY}
-              />
-            ))}
-        </svg>
+                {/* LEFT PAGE HIGHLIGHTS */}
+                <svg className="absolute inset-0 h-full w-full pointer-events-none">
+                  {[...strokes, ...(current ? [current] : [])]
+                    .filter((s) => s.page === pageNumber)
+                    .map((s) => (
+                      <path
+                        key={s.id}
+                        d={s.path}
+                        stroke={s.color}
+                        strokeWidth={s.size}
+                        strokeLinecap="square"
+                        strokeLinejoin="miter"
+                        fill="none"
+                        opacity={FIXED_OPACITY}
+                      />
+                    ))}
+                </svg>
+              </div>
+
+              {/* RIGHT PAGE */}
+              {pageNumber + 1 <= (numPages ?? 0) && (
+                <div className="relative border border-secondary/30">
+                  <Page pageNumber={pageNumber + 1} width={pageWidth} />
+
+                  {/* RIGHT PAGE HIGHLIGHTS */}
+                  <svg className="absolute inset-0 h-full w-full pointer-events-none">
+                    {[...strokes, ...(current ? [current] : [])]
+                      .filter((s) => s.page === pageNumber + 1)
+                      .map((s) => (
+                        <path
+                          key={s.id}
+                          d={s.path}
+                          stroke={s.color}
+                          strokeWidth={s.size}
+                          strokeLinecap="square"
+                          strokeLinejoin="miter"
+                          fill="none"
+                          opacity={FIXED_OPACITY}
+                        />
+                      ))}
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+        </Document>
       </div>
     </div>
   );

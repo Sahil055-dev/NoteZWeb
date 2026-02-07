@@ -41,9 +41,10 @@ export default function MainHeader({
     const lastName = user.user_metadata.lastName || "";
     initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   }
-  if (currentPath?.includes("/loading")) {
+  if (currentPath?.includes("/loading") || currentPath?.includes("/studysession")) {
     return null;
   }
+
   if (user) {
     return (
       <header

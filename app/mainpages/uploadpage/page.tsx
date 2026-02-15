@@ -7,8 +7,19 @@ import UserNoteDialog from "./components/UserNoteDialog"; // Ensure this matches
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import supabase from "@/app/API/supabase";
-import formatDate from "@/app/utilities/formatDate"
-import {Spinner} from "@/components/ui/spinner"
+import formatDate from "@/app/utilities/formatDate";
+import { Spinner } from "@/components/ui/spinner";
+import { useAuth } from "@/components/context/AuthProvider";
+
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { ArrowUpRightIcon } from "lucide-react";
 
 export default function UploadPage() {
   const [selectedNote, setSelectedNote] = useState<any>(null);
@@ -18,11 +29,10 @@ export default function UploadPage() {
     loading: false,
     notFound: false,
   });
-
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { user } = useAuth();
   // --- FIX #1: Convert Author Object to String for the Dialog ---
   const handleNoteClick = (note: any) => {
-    // The 'note' object from DB has author as an object: { firstName: '...', lastName: '...' }
-    // We must convert it to a string because the Dialog expects a string.
     const authorName = note.author
       ? `${note.author.firstName} ${note.author.lastName}`
       : "Unknown User";
@@ -34,37 +44,100 @@ export default function UploadPage() {
     setIsDialogOpen(true);
   };
 
+  const handleDeleteNote = async (noteId: string, filePath: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this note? This action cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      // A. Delete from Storage (This likely works fine if you own the file)
+      const { error: storageError } = await supabase.storage
+        .from("note_bucket")
+        .remove([filePath]);
+
+      if (storageError) {
+        console.warn("Storage delete warning:", storageError);
+        // Optional: decide if you want to stop here or continue to delete the DB record
+      }
+
+      // B. Delete from Database - UPDATED
+      const { data, error: dbError } = await supabase
+        .from("notes")
+        .delete()
+        .eq("id", noteId)
+        .select(); // <--- IMPORTANT: This returns the deleted row(s)
+
+      if (dbError) {
+        throw new Error(dbError.message);
+      }
+
+      // CHECK: Did we actually delete anything?
+      if (!data || data.length === 0) {
+        throw new Error(
+          "Delete failed. You might not have permission to delete this note.",
+        );
+      }
+
+      // C. Update UI
+      toast.success("Note deleted successfully");
+      setRecentUploads((prev) => prev.filter((note) => note.id !== noteId));
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error("Delete Error:", error);
+      toast.error(error.message || "Error deleting note");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   useEffect(() => {
     setStatus((p) => ({
       ...p,
       loading: true,
     }));
     const fetchNotes = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // 2. STOP IF NO USER
+      // If user is null, we stop. This prevents the "undefined" error.
+      if (!user) {
+        console.log("No active user found.");
+        setStatus({ loading: false, notFound: true });
+        return;
+      }
       const { data: notes, error } = await supabase
         .from("notes")
         .select(
           `
-          *,
-          author:profiles (
-            firstName,
-            lastName,
-            universityTier
-          )
-        `
+      *,
+      author:profiles (
+        firstName,
+        lastName,
+        universityTier
+      )
+    `,
         )
+        .eq("user_id", user.id) // <--- ADD THIS LINE
         .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching notes:", error);
         setStatus({ loading: false, notFound: true });
-
       } else {
         // --- FIX #2: Save the data to State! ---
         setRecentUploads(notes || []);
-        setStatus({ loading: false, notFound: notes?.length === 0 });// If no notes, set notFound to true
+        setStatus({ loading: false, notFound: notes?.length === 0 }); // If no notes, set notFound to true
       }
     };
-    
+
     fetchNotes();
   }, []);
 
@@ -102,9 +175,38 @@ export default function UploadPage() {
                 Loading Your Notes
               </div>
             ) : status.notFound ? (
-              <p className="mt-36 text-muted-foreground md:text-md text-base text-center py-10">
-                Looks Like You haven't Uploaded Any Notes Yet!
-              </p>
+              <Empty className="border border-dashed h-full ">
+                <EmptyHeader>
+                  <EmptyMedia
+                    variant="icon"
+                    className="text-primary p-8 w-16 h-16"
+                  >
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M16.0001 21L21 16M20.9999 21L16 16"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M20 13.5V12C20 10.1144 20 9.17157 19.4142 8.58579C18.8284 8 17.8856 8 16 8H14.6569C13.8394 8 13.4306 8 13.0631 7.84776C12.6955 7.69552 12.4065 7.40649 11.8284 6.82843L11.1716 6.17157C10.5935 5.59351 10.3045 5.30448 9.93694 5.15224C9.5694 5 9.16065 5 8.34315 5H8C6.11438 5 5.17157 5 4.58579 5.58579C4 6.17157 4 7.11438 4 9V15C4 16.8856 4 17.8284 4.58579 18.4142C5.17157 19 6.11438 19 8 19H13"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                  </EmptyMedia>
+                  <EmptyTitle>No Files to View</EmptyTitle>
+                  <EmptyDescription>
+                    Looks like you haven't uploaded anything yet!
+                  </EmptyDescription>
+                </EmptyHeader>
+
+              </Empty>
             ) : (
               <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-4">
                 {recentUploads.map((n, index) => {
@@ -138,9 +240,9 @@ export default function UploadPage() {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         note={selectedNote}
+        onDelete={handleDeleteNote} // <--- Pass the function here
+        isDeleting={isDeleting} // <--- Pass the loading state here
       />
     </div>
   );
 }
-
-

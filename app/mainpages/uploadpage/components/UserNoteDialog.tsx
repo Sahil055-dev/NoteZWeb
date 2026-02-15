@@ -7,13 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User2, Calendar, Eye, BookOpenText, Trash2 } from "lucide-react";
+import { User2, Calendar, Eye, BookOpenText, Trash2, Loader2 } from "lucide-react";
 import formatDate from "@/app/utilities/formatDate";
 
 interface NoteSummaryDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onDelete: (id: string, filePath: string) => void; 
+  isDeleting: boolean;
   note: {
+    id: string; // Ensure ID is included in the type
     title: string;
     subject: string;
     topic: string;
@@ -21,6 +24,7 @@ interface NoteSummaryDialogProps {
     downloads: number;
     created_at: string;
     description?: string;
+    file_path: string;
   } | null;
 }
 
@@ -28,11 +32,11 @@ export default function NoteSummaryDialog({
   isOpen,
   onClose,
   note,
+  onDelete,     // Destructure new prop
+  isDeleting,
 }: NoteSummaryDialogProps) {
   // Determine if open state should change
-  const formattedDate = note
-    ? formatDate(note.created_at)
-    : "Unknown Date";
+  const formattedDate = note ? formatDate(note.created_at) : "Unknown Date";
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       onClose();
@@ -41,7 +45,6 @@ export default function NoteSummaryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{note?.title || "Note Title"}</DialogTitle>
@@ -87,13 +90,24 @@ export default function NoteSummaryDialog({
               <Button type="button" className="md:w-32">
                 <BookOpenText className="mr-2" /> View
               </Button>
-              <Button type="button" variant={"ghost"} size={"icon"}>
-                <Trash2 className="m-2" />
+              <Button
+                type="button"
+                variant={"destructive"}
+                size={"icon"}
+                disabled={isDeleting} // Disable while processing
+                onClick={() => {
+                  if (note?.id && note?.file_path) {
+                    onDelete(note.id, note.file_path);
+                  }
+                }}
+              >
+                {isDeleting ? (
+                  <Loader2 className="m-2 animate-spin" />
+                ) : (
+                  <Trash2 className="m-2" />
+                )}
               </Button>
             </div>
-            <Button type="button" variant={"destructive"} size={"icon"}>
-              <Trash2 className="m-2" />
-            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

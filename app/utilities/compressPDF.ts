@@ -1,3 +1,4 @@
+'use client'
 // src/utils/compressPdf.ts
 import { PDFDocument } from 'pdf-lib';
 

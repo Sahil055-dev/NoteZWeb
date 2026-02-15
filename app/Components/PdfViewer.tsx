@@ -26,6 +26,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import ThemeToggle from "./ThemeToggler";
 import useIsSmallScreen from "../hooks/isSmallScreen";
 import useIsTabletPortrait from "../hooks/isTabletPotrait";
@@ -64,8 +74,6 @@ const MAX_ZOOM = 2.0;
 const ZOOM_STEP = 0.1;
 // ---------------- COMPONENT ----------------
 export default function PdfViewer() {
-  const isSmallScreen = useIsSmallScreen();
-
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [activePage, setActivePage] = useState<number | null>(null);
@@ -98,6 +106,36 @@ export default function PdfViewer() {
       y: e.clientY - rect.top,
     };
   }
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Ignore if user is typing in input/select
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      if (e.key === "ArrowRight") {
+        if (canShowTwoPages) {
+          setPageNumber((p) => Math.min((numPages ?? 1) - 1, p + 2));
+        } else {
+          setPageNumber((p) => Math.min(numPages ?? 1, p + 1));
+        }
+      }
+
+      if (e.key === "ArrowLeft") {
+        if (canShowTwoPages) {
+          setPageNumber((p) => Math.max(1, p - 2));
+        } else {
+          setPageNumber((p) => Math.max(1, p - 1));
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [numPages, canShowTwoPages]);
 
   // ---------------- MOUSE EVENTS ----------------
   function onMouseDown(e: React.MouseEvent, page: number) {
@@ -279,7 +317,7 @@ export default function PdfViewer() {
       >
         <motion.div
           layout
-          className="flex justify-between fixed top-1 bg-background/60 backdrop-blur-xl items-center gap-2 rounded-md border  p-2 shadow-sm"
+          className="flex justify-between fixed top-1 bg-background/60 backdrop-blur-xl items-center gap-2 rounded-md border p-2 shadow-sm"
         >
           <span className="flex items-center gap-1">
             <Button
@@ -319,15 +357,29 @@ export default function PdfViewer() {
                     ))}
                   </div>
 
-                  <select
-                    className="w-full rounded-md border px-2 py-1 text-sm"
-                    value={size}
-                    onChange={(e) => setSize(Number(e.target.value))}
+                  <Select
+                    value={String(size)}
+                    onValueChange={(value) => setSize(Number(value))}
                   >
-                    <option value={8}>Small</option>
-                    <option value={14}>Medium</option>
-                    <option value={22}>Large</option>
-                  </select>
+                    <SelectTrigger
+                      className="
+                    w-full bg-background text-sm border border-secondary/30 hover:bg-muted focus:ring-2 focus:ring-primary"
+                    >
+                      <SelectValue placeholder="Size" />
+                    </SelectTrigger>
+
+                    <SelectContent className="bg-background border border-secondary/30 shadow-md">
+                      <SelectItem
+                        value="8"
+                        className="focus:bg-primary/10 data-[state=checked]:bg-primary/20 data-[state=checked]:text-primary"
+                      >
+                        Small
+                      </SelectItem>
+
+                      <SelectItem value="14">Medium</SelectItem>
+                      <SelectItem value="22">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </PopoverContent>
               </Popover>
             ) : (
@@ -353,15 +405,35 @@ export default function PdfViewer() {
                 </PopoverTrigger>
 
                 <PopoverContent className="w-32  mt-2 ">
-                  <select
-                    className="w-full rounded-md border px-2 py-1 text-sm"
-                    value={size}
-                    onChange={(e) => setSize(Number(e.target.value))}
+                  <Select
+                    value={String(size)}
+                    onValueChange={(value) => setSize(Number(value))}
                   >
-                    <option value={8}>Small</option>
-                    <option value={14}>Medium</option>
-                    <option value={22}>Large</option>
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Size" />
+                    </SelectTrigger>
+
+                    <SelectContent className="bg-background border border-primary/20 shadow-lg rounded-lg">
+                      <SelectItem
+                        className="text-secondary focus:bg-primary/10 focus:text-primary"
+                        value="8"
+                      >
+                        Small
+                      </SelectItem>
+                      <SelectItem
+                        className="text-secondary focus:bg-primary/10 focus:text-primary"
+                        value="14"
+                      >
+                        Medium
+                      </SelectItem>
+                      <SelectItem
+                        className="text-secondary focus:bg-primary/10 focus:text-primary"
+                        value="22"
+                      >
+                        Large
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </PopoverContent>
               </Popover>
             ) : (
@@ -432,33 +504,55 @@ export default function PdfViewer() {
                       ))}
                     </div>
 
-                    <select
-                      className="rounded-md border bg-background px-2 py-1 text-sm"
-                      value={size}
-                      onChange={(e) => setSize(Number(e.target.value))}
+                    <Select
+                      value={String(size)}
+                      onValueChange={(value) => setSize(Number(value))}
                     >
-                      <option value={8}>Small</option>
-                      <option value={14}>Medium</option>
-                      <option value={22}>Large</option>
-                    </select>
+                      <SelectTrigger
+                        className="
+                    w-full bg-background text-sm border border-secondary/30 hover:bg-muted focus:ring-2 focus:ring-primary"
+                      >
+                        <SelectValue placeholder="Size" />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-background border border-secondary/30 shadow-md">
+                        <SelectItem
+                          value="8"
+                          className="focus:bg-primary/10 data-[state=checked]:bg-primary/20 data-[state=checked]:text-primary"
+                        >
+                          Small
+                        </SelectItem>
+
+                        <SelectItem value="14">Medium</SelectItem>
+                        <SelectItem value="22">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </motion.div>
                 )}
 
                 {tool === "eraser" && (
-                  <motion.select
+                  <motion.div
                     layout
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15 }}
-                    className="ml-2 rounded-md border bg-background px-2 py-1 text-sm"
-                    value={size}
-                    onChange={(e) => setSize(Number(e.target.value))}
                   >
-                    <option value={8}>Small</option>
-                    <option value={14}>Medium</option>
-                    <option value={22}>Large</option>
-                  </motion.select>
+                    <Select
+                      value={String(size)}
+                      onValueChange={(value) => setSize(Number(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Size" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        <SelectItem value="8">Small</SelectItem>
+                        <SelectItem value="14">Medium</SelectItem>
+                        <SelectItem value="22">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </motion.div>
                 )}
               </AnimatePresence>
             )}
@@ -564,13 +658,16 @@ export default function PdfViewer() {
               </Button>
             )}
           </div>
-          <Button variant={"ghost"} className="hover:bg-primary/10 px-4">
-            <SaveIcon className={iconClass} />
+          {isCompactToolbar ? null : (
+            <>
+              <Button variant={"ghost"} className="hover:bg-primary/10 px-4">
+                <SaveIcon className={iconClass} />
 
-            <p className="ml-2 ">Save</p>
-          </Button>
-
-          <ThemeToggle />
+                <p className="ml-2 ">Save</p>
+              </Button>
+              <ThemeToggle />
+            </>
+          )}
         </motion.div>
       </motion.div>
 
@@ -578,7 +675,7 @@ export default function PdfViewer() {
         ref={(el) => {
           pageRefs.current[pageNumber] = el;
         }}
-        className="relative mt-16 border border-"
+        className="relative mt-16 border "
         onMouseDown={(e) => onMouseDown(e, pageNumber)}
         onMouseMove={(e) => onMouseMove(e, pageNumber)}
         onMouseUp={onMouseUp}
@@ -587,8 +684,8 @@ export default function PdfViewer() {
           file="/test.pdf"
           onLoadSuccess={onDocumentLoadSuccess}
           loading={
-            <div className="flex min-w-full items-center justify-center h-40 text-sm text-muted-foreground">
-              <Spinner />
+            <div className="flex md:w-4xl md:h-165 items-center justify-center md:text-lg text-muted-foreground">
+              <Spinner className="size-8 mr-2 text-secondary" />
               Loading PDF…
             </div>
           }
@@ -719,7 +816,7 @@ export default function PdfViewer() {
                   <div className="relative">
                     {/* 1️⃣ PDF RENDER (NO INPUT EVER) */}
                     <div className="pointer-events-none">
-                      <Page pageNumber={pageNumber + 1} width={pageWidth} />
+                      <Page pageNumber={pageNumber} width={pageWidth} />
                     </div>
 
                     {/* 2️⃣ INTERACTION OVERLAY (THIS IS THE KEY) */}

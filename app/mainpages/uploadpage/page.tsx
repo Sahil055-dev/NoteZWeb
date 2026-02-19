@@ -44,43 +44,35 @@ export default function UploadPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteNote = async (noteId: string, filePath: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this note? This action cannot be undone.",
-      )
-    ) {
-      return;
-    }
+const handleDeleteNote = async (noteId: string, filePath: string) => {
+    
 
     setIsDeleting(true);
 
     try {
-      // A. Delete from Storage (This likely works fine if you own the file)
+      // A. Delete from Storage
       const { error: storageError } = await supabase.storage
         .from("note_bucket")
         .remove([filePath]);
 
       if (storageError) {
         console.warn("Storage delete warning:", storageError);
-        // Optional: decide if you want to stop here or continue to delete the DB record
       }
 
-      // B. Delete from Database - UPDATED
+      // B. Delete from Database
       const { data, error: dbError } = await supabase
         .from("notes")
         .delete()
         .eq("id", noteId)
-        .select(); // <--- IMPORTANT: This returns the deleted row(s)
+        .select(); 
 
       if (dbError) {
         throw new Error(dbError.message);
       }
 
-      // CHECK: Did we actually delete anything?
       if (!data || data.length === 0) {
         throw new Error(
-          "Delete failed. You might not have permission to delete this note.",
+          "Delete failed. You might not have permission to delete this note."
         );
       }
 
@@ -96,48 +88,35 @@ export default function UploadPage() {
     }
   };
 
+  const fetchNotes = async () => {
+    setStatus((p) => ({ ...p, loading: true }));
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setStatus({ loading: false, notFound: true });
+      return;
+    }
+
+    const { data: notes, error } = await supabase
+      .from("notes")
+      .select(`*, author:profiles (firstName, lastName, universityTier)`)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching notes:", error);
+      setStatus({ loading: false, notFound: true });
+    } else {
+      setRecentUploads(notes || []);
+      setStatus({ loading: false, notFound: notes?.length === 0 });
+    }
+  };
+
+  // 2. CALL IT ON MOUNT
   useEffect(() => {
-    setStatus((p) => ({
-      ...p,
-      loading: true,
-    }));
-    const fetchNotes = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      // 2. STOP IF NO USER
-      // If user is null, we stop. This prevents the "undefined" error.
-      if (!user) {
-        console.log("No active user found.");
-        setStatus({ loading: false, notFound: true });
-        return;
-      }
-      const { data: notes, error } = await supabase
-        .from("notes")
-        .select(
-          `
-      *,
-      author:profiles (
-        firstName,
-        lastName,
-        universityTier
-      )
-    `,
-        )
-        .eq("user_id", user.id) // <--- ADD THIS LINE
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching notes:", error);
-        setStatus({ loading: false, notFound: true });
-      } else {
-        // --- FIX #2: Save the data to State! ---
-        setRecentUploads(notes || []);
-        setStatus({ loading: false, notFound: notes?.length === 0 }); // If no notes, set notFound to true
-      }
-    };
-
     fetchNotes();
   }, []);
 
@@ -156,7 +135,7 @@ export default function UploadPage() {
           </div>
 
           <div className="shrink-0">
-            <UploadNoteDialog />
+            <UploadNoteDialog onUploadSuccess={fetchNotes} />
           </div>
         </div>
 
@@ -205,7 +184,6 @@ export default function UploadPage() {
                     Looks like you haven't uploaded anything yet!
                   </EmptyDescription>
                 </EmptyHeader>
-
               </Empty>
             ) : (
               <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-4">

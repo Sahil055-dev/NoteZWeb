@@ -7,13 +7,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User2, Calendar, Eye, BookOpenText, Trash2, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  User2,
+  Calendar,
+  Eye,
+  BookOpenText,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import formatDate from "@/app/utilities/formatDate";
+import Link from "next/link";
 
 interface NoteSummaryDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onDelete: (id: string, filePath: string) => void; 
+  onDelete: (id: string, filePath: string) => void;
   isDeleting: boolean;
   note: {
     id: string; // Ensure ID is included in the type
@@ -32,7 +51,7 @@ export default function NoteSummaryDialog({
   isOpen,
   onClose,
   note,
-  onDelete,     // Destructure new prop
+  onDelete, // Destructure new prop
   isDeleting,
 }: NoteSummaryDialogProps) {
   // Determine if open state should change
@@ -43,71 +62,110 @@ export default function NoteSummaryDialog({
     }
   };
 
+  const viewerUrl = note?.file_path
+    ? `/mainpages/studysession?file=${encodeURIComponent(note.file_path)}`
+    : "#";
+  // const viewerUrl =
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{note?.title || "Note Title"}</DialogTitle>
-          <div className="flex md:justify-start justify-center gap-2 text-xs lg:text-sm my-4 ">
-            <p className="bg-primary/20 rounded-xl px-1.5 w-fit text-primary">
-              {note?.subject || "Subject"}
-            </p>
+      {/* 1. Responsive Dialog Container */}
+      <DialogContent className="w-[95vw] border-secondary/10 sm:max-w-lg max-h-[90vh] flex flex-col gap-0 p-4 sm:p-6 overflow-hidden">
+        <DialogHeader className="text-left space-y-4">
+          <DialogTitle className="text-xl md:text-2xl leading-tight">
+            {note?.title || "Note Title"}
+          </DialogTitle>
 
-            <p className="bg-primary/20 rounded-xl px-1.5 w-fit text-secondary">
+          {/* 2. Tags Section (Wraps nicely on small screens) */}
+          <div className="flex flex-wrap gap-2 text-xs font-medium">
+            <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-md">
+              {note?.subject || "Subject"}
+            </span>
+            <span className="bg-secondary/10 text-secondary px-2.5 py-1 rounded-md">
               {note?.topic || "Topic"}
-            </p>
+            </span>
           </div>
+
+          {/* 3. Description Section (Scrollable on mobile) */}
           <DialogDescription asChild>
-            {/* Added asChild to avoid p inside p warning if description contains blocks */}
-            <div className="bg-primary/10 text-foreground text-xs lg:text-sm p-2 rounded-md text-start">
+            <p className="bg-muted/30  wrap-break-word w-full md:h-24 h-32 border border-border/50 text-foreground text-sm p-3 rounded-md text-left max-h-[25vh] custom-scrollbar leading-relaxed">
               {note?.description || "No Description Available"}
-            </div>
+            </p>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="my-2 flex gap-2">
-          <span className="flex flex-col md:flex-row justify-items-start text-xs lg:text-md items-center text-wrap justify-center gap-2 text-muted-foreground ">
-            <span className="flex items-center text-start gap-2">
-              By <User2 size={12} />
-              <p className="text-primary text-wrap text-start">
-                {note?.author || "Author Name"}
-              </p>{" "}
+        {/* 4. Metadata Section (Clean layout for Author, Date, Views) */}
+        <div className=" w-full flex gap-3 my-6  p-3 rounded-md text-sm text-muted-foreground">
+          <div className="flex w-1/2 items-center gap-2">
+            <User2 size={16} className="shrink-0 text-primary/70" />
+            <span className="truncate">
+              By{" "}
+              <span className="text-foreground font-medium">
+                {note?.author || "Unknown"}
+              </span>
             </span>
-            Uploaded on
-            <Calendar size={12} />
-            <p className="text-primary/70">{formattedDate}</p>
-          </span>
-        </div>
-        <span className="flex items-center text-sm md:text-xs gap-2">
-          {" "}
-          <Eye size={16} />
-          {note?.downloads || 0} Views
-        </span>
+          </div>
+          <div className="flex w-1/2 items-center gap-2">
+            <Calendar size={16} className="shrink-0 text-primary/70" />
+            <span>{formattedDate}</span>
+          </div>
+          <div className="flex w-1.2 items-center gap-2 sm:col-span-2">
+            <Eye size={16} className="shrink-0 text-primary/70" />
+            <span>{note?.downloads || 0} Views</span>
+          </div>
 
-        <DialogFooter>
-          <div className="w-full flex justify-between">
-            <div className="flex gap-2">
-              <Button type="button" className="md:w-32">
-                <BookOpenText className="mr-2" /> View
-              </Button>
-              <Button
-                type="button"
-                variant={"destructive"}
-                size={"icon"}
-                disabled={isDeleting} // Disable while processing
-                onClick={() => {
-                  if (note?.id && note?.file_path) {
-                    onDelete(note.id, note.file_path);
-                  }
-                }}
-              >
-                {isDeleting ? (
-                  <Loader2 className="m-2 animate-spin" />
-                ) : (
-                  <Trash2 className="m-2" />
-                )}
-              </Button>
-            </div>
+        </div>
+
+        {/* 5. Footer (Stacks on mobile, row on desktop) */}
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 mt-auto">
+          <div className="flex flex-col sm:flex-row w-full gap-3">
+            <Button asChild className="w-full sm:w-auto flex-1" type="button">
+              <Link href={viewerUrl} target="_blank">
+                <BookOpenText className="mr-2 h-4 w-4" /> View Document
+              </Link>
+            </Button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="w-full sm:w-auto shrink-0"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-2 h-4 w-4" />
+                  )}
+                  {isDeleting ? "Deleting..." : "Delete Note"}
+                </Button>
+              </AlertDialogTrigger>
+
+              <AlertDialogContent className="w-[90vw] sm:max-w-md">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete{" "}
+                    <strong className="text-foreground">{note?.title}</strong>{" "}
+                    and remove it from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                  <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => {
+                      if (note?.id && note?.file_path) {
+                        onDelete(note.id, note.file_path);
+                      }
+                    }}
+                  >
+                    Delete Permanently
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </DialogFooter>
       </DialogContent>

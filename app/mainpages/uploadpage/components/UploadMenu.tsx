@@ -29,9 +29,16 @@ type dataState = {
   description: string;
   subject: string;
 };
+
+interface UploadNoteDialogProps {
+  onUploadSuccess?: () => void;
+}
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-export default function UploadNoteDialog() {
+export default function UploadNoteDialog({
+  onUploadSuccess,
+}: UploadNoteDialogProps) {
   // const user = useAuth();
 
   const [open, setOpen] = useState(false);
@@ -71,7 +78,7 @@ export default function UploadNoteDialog() {
   const filteredSubjects = useMemo(() => {
     if (!searchTerm) return subjectOptions;
     return subjectOptions.filter((s) =>
-      s.toLowerCase().includes(searchTerm.toLowerCase())
+      s.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [subjectOptions, searchTerm]);
 
@@ -119,7 +126,7 @@ export default function UploadNoteDialog() {
       const fileToUpload = await compressPdf(data.file);
 
       console.log(
-        `Original: ${data.file.size}, Compressed: ${fileToUpload.size}`
+        `Original: ${data.file.size}, Compressed: ${fileToUpload.size}`,
       );
 
       // --- PHASE 2: UPLOAD ---
@@ -164,11 +171,16 @@ export default function UploadNoteDialog() {
         description: "",
         subject: "",
       });
+
+      // 3. TRIGGER THE PARENT REFRESH
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Upload failed");
     } finally {
-      setStatus("idle"); // Reset status
+      setStatus("idle");
     }
   };
 

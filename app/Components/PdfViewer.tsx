@@ -58,6 +58,9 @@ type Stroke = {
   path: string;
 };
 
+interface PdfViewerProps {
+  fileUrl: string;
+}
 // ---------------- CONSTANTS ----------------
 const COLORS = [
   "#fff59d", // yellow
@@ -73,7 +76,7 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 2.0;
 const ZOOM_STEP = 0.1;
 // ---------------- COMPONENT ----------------
-export default function PdfViewer() {
+export default function PdfViewer({ fileUrl }: PdfViewerProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [activePage, setActivePage] = useState<number | null>(null);
@@ -681,7 +684,7 @@ export default function PdfViewer() {
         onMouseUp={onMouseUp}
       >
         <Document
-          file="/test.pdf"
+          file={fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           loading={
             <div className="flex md:w-4xl md:h-165 items-center justify-center md:text-lg text-muted-foreground">

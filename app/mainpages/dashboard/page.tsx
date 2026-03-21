@@ -141,7 +141,6 @@ const Dashboard = () => {
           <p className="text-muted-foreground mt-1 text-center">
             Here's what's happening with your notes today.
           </p>
-          <Button onClick={() => toast.info("File Should be greater than 5MB")}>Hello</Button>
         </div>
 
         {/* Top Row: Stats + Subjects + Quick Actions */}

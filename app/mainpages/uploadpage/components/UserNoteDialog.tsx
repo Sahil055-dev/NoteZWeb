@@ -56,6 +56,7 @@ export default function NoteSummaryDialog({
 }: NoteSummaryDialogProps) {
   // Determine if open state should change
   const formattedDate = note ? formatDate(note.created_at) : "Unknown Date";
+  console.log(formattedDate)
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       onClose();
@@ -95,25 +96,27 @@ export default function NoteSummaryDialog({
         </DialogHeader>
 
         {/* 4. Metadata Section (Clean layout for Author, Date, Views) */}
-        <div className=" w-full flex gap-3 my-6  p-3 rounded-md text-sm text-muted-foreground">
-          <div className="flex w-1/2 items-center gap-2">
-            <User2 size={16} className="shrink-0 text-primary/70" />
-            <span className="truncate">
-              By{" "}
-              <span className="text-foreground font-medium">
-                {note?.author || "Unknown"}
+        <div className=" w-full flex-col my-6  p-3 rounded-md text-sm text-muted-foreground">
+          <div className="w-full md:flex justify-between ">
+            <div className="flex w-1/2 items-center gap-2">
+              <User2 size={16} className="shrink-0 text-primary/70" />
+              <span className="truncate">
+                By{" "}
+                <span className="text-foreground font-medium">
+                  {note?.author || "Unknown"}
+                </span>
               </span>
-            </span>
+            </div>
+            <div className="flex w-1/2 items-center gap-2">
+              <Calendar size={16} className="shrink-0 text-primary/70" />
+              
+              <span>Uploaded {formattedDate}</span>
+            </div>
           </div>
-          <div className="flex w-1/2 items-center gap-2">
-            <Calendar size={16} className="shrink-0 text-primary/70" />
-            <span>{formattedDate}</span>
-          </div>
-          <div className="flex w-1.2 items-center gap-2 sm:col-span-2">
+          <div className="flex w-1/2 mt-2 items-center gap-2 sm:col-span-2">
             <Eye size={16} className="shrink-0 text-primary/70" />
             <span>{note?.downloads || 0} Views</span>
           </div>
-
         </div>
 
         {/* 5. Footer (Stacks on mobile, row on desktop) */}

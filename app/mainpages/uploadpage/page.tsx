@@ -34,7 +34,9 @@ export default function UploadPage() {
   // --- FIX #1: Convert Author Object to String for the Dialog ---
   const handleNoteClick = (note: any) => {
     const authorName = note.author
-      ? `${note.author.firstName} ${note.author.lastName}`
+      ? Array.isArray(note.author)
+        ? `${note.author[0]?.firstName || ""} ${note.author[0]?.lastName || ""}`.trim() || "Unknown User"
+        : `${note.author.firstName || ""} ${note.author.lastName || ""}`.trim() || "Unknown User"
       : "Unknown User";
 
     setSelectedNote({
@@ -195,14 +197,16 @@ const handleDeleteNote = async (noteId: string, filePath: string) => {
                       title={n.title}
                       subject={n.subject}
                       topic={n.topic}
-                      downloads={n.downloads}
-                      date={formatDate(n.created_at)} // Ensure this matches DB column name
+                      downloads={n.views_count ?? n.downloads ?? 0}
+                      date={formatDate(n.created_at)}
                       author={
                         n.author
-                          ? `${n.author.firstName} ${n.author.lastName}`
+                          ? Array.isArray(n.author)
+                            ? `${n.author[0]?.firstName || ""} ${n.author[0]?.lastName || ""}`.trim() || "Unknown User"
+                            : `${n.author.firstName || ""} ${n.author.lastName || ""}`.trim() || "Unknown User"
                           : "Unknown User"
-                      } // Pass string to Card
-                      onClick={() => handleNoteClick(n)} // Pass original object to Handler
+                      }
+                      onClick={() => handleNoteClick(n)}
                     />
                   );
                 })}

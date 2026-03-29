@@ -10,6 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 function PdfContent() {
   const searchParams = useSearchParams();
   const filePath = searchParams.get("file");
+  const noteId = searchParams.get("noteId");
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +53,7 @@ function PdfContent() {
   }
 
   // 3. Pass the URL to the dumb UI component
-  return <PdfViewer fileUrl={signedUrl} />;
+  return <PdfViewer fileUrl={signedUrl} noteId={noteId || undefined} />;
 }
 
 export default function PdfPage() {

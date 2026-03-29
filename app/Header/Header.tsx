@@ -17,10 +17,8 @@ import {
 } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { Menu } from "lucide-react";
-import SignInPage from "@/app/Authentication/signinpage/page";
 import useIsSmallScreen from "../hooks/isSmallScreen";
-import { Bell, FileUp } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { FileUp, Bookmark, Search } from "lucide-react";
 import { useAuth } from "@/components/context/AuthProvider";
 import { User } from "@supabase/supabase-js";
 
@@ -65,6 +63,26 @@ export default function MainHeader({
             // --- Desktop View ---
             <div className="flex gap-2 md:gap-6 items-center">
               <TooltipProvider>
+                {/* Search Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/mainpages/search">
+                      <Button
+                        variant="ghost"
+                        className="text-foreground border-primary md:text-md rounded-md hover:bg-primary/20 hover:text-foreground transition"
+                      >
+                        <Search />
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    className="bg-background text-foreground border border-primary/40 shadow-md"
+                  >
+                    <p>Search</p>
+                  </TooltipContent>
+                </Tooltip>
+
                 {/* Upload Button */}
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -85,15 +103,15 @@ export default function MainHeader({
                   </TooltipContent>
                 </Tooltip>
 
-                {/* Notification Button */}
+                {/* Bookmark Nav Button */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       className="items-center text-foreground border-primary md:text-md rounded-md hover:bg-primary/20 hover:text-foreground transition"
                     >
-                      <Link href="../">
-                        <Bell />
+                      <Link href="/mainpages/bookmarks">
+                        <Bookmark />
                       </Link>
                     </Button>
                   </TooltipTrigger>
@@ -101,7 +119,7 @@ export default function MainHeader({
                     side="bottom"
                     className="bg-background text-foreground border border-primary/40 shadow-md"
                   >
-                    <p>Notifications</p>
+                    <p>Bookmarks</p>
                   </TooltipContent>
                 </Tooltip>
 
@@ -147,11 +165,32 @@ export default function MainHeader({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-40 bg-background/40 backdrop-blur-sm 
+                className="w-44 bg-background/40 backdrop-blur-sm 
         z-50 inset-ring-1 inset-ring-secondary/60"
               >
-                <DropdownMenuItem>Sign In</DropdownMenuItem>
-                <DropdownMenuItem>Sign Up</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/mainpages/search" className="flex items-center gap-2 w-full">
+                    <Search className="h-4 w-4" />
+                    Search
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/mainpages/uploadpage" className="flex items-center gap-2 w-full">
+                    <FileUp className="h-4 w-4" />
+                    Upload
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/mainpages/bookmarks" className="flex items-center gap-2 w-full">
+                    <Bookmark className="h-4 w-4" />
+                    Bookmarks
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/mainpages/profilepage" className="flex items-center gap-2 w-full">
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <ThemeToggle />
@@ -173,7 +212,7 @@ export default function MainHeader({
       "
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
-          <Link href="/mainpages/landingpage">
+          <Link href="/">
             <Logo size={isSmallScreen ? "xsmall" : "small"} />
           </Link>
 

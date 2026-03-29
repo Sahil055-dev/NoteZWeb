@@ -41,6 +41,9 @@ import useIsSmallScreen from "../hooks/isSmallScreen";
 import useIsTabletPortrait from "../hooks/isTabletPotrait";
 import useCanShowTwoPages from "../hooks/canShowTwoPages";
 import { Spinner } from "@/components/ui/spinner";
+import supabase from "@/app/API/supabase";
+import { toast } from "sonner";
+import AiWorkspaceChat from "./AiWorkspaceChat";
 // ---------------- PDF WORKER ----------------
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.js",
@@ -60,6 +63,7 @@ type Stroke = {
 
 interface PdfViewerProps {
   fileUrl: string;
+  noteId?: string;
 }
 // ---------------- CONSTANTS ----------------
 const COLORS = [
@@ -76,7 +80,7 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 2.0;
 const ZOOM_STEP = 0.1;
 // ---------------- COMPONENT ----------------
-export default function PdfViewer({ fileUrl }: PdfViewerProps) {
+export default function PdfViewer({ fileUrl, noteId }: PdfViewerProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [activePage, setActivePage] = useState<number | null>(null);
@@ -89,9 +93,36 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [current, setCurrent] = useState<Stroke | null>(null);
   const [erasing, setErasing] = useState(false);
+  const [savingStrokes, setSavingStrokes] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    const el = pdfContainerRef.current;
+    if (!el) return;
+
+    const handleMouseUp = () => {
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim()) {
+        // Only set if the selection anchor is inside the PDF container
+        if (el.contains(selection.anchorNode)) {
+          setSelectedText(selection.toString().trim());
+        }
+      } else {
+        setTimeout(() => {
+          if (!window.getSelection()?.toString().trim()) {
+            setSelectedText("");
+          }
+        }, 150);
+      }
+    };
+    el.addEventListener("mouseup", handleMouseUp);
+    return () => el.removeEventListener("mouseup", handleMouseUp);
+  }, []);
 
   const canShowTwoPages = useCanShowTwoPages();
 
@@ -140,63 +171,61 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
     };
   }, [numPages, canShowTwoPages]);
 
-  // ---------------- MOUSE EVENTS ----------------
-  function onMouseDown(e: React.MouseEvent, page: number) {
-    if (tool === "select") return;
+  // Load annotations from supabase
+  useEffect(() => {
+    if (!noteId) return;
+    const fetchAnnotations = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const { data, error } = await supabase
+          .from("user_annotations")
+          .select("annotations_data")
+          .eq("note_id", noteId)
+          .eq("user_id", session.user.id)
+          .single();
+        if (data && data.annotations_data) {
+          setStrokes(data.annotations_data as Stroke[]);
+        }
+      } catch (err) {
+        console.error("Error loading annotations:", err);
+      }
+    };
+    fetchAnnotations();
+  }, [noteId]);
 
-    const p = getPoint(e, page);
-    if (!p) return;
-
-    setActivePage(page);
-
-    if (tool === "brush") {
-      setCurrent({
-        id: crypto.randomUUID(),
-        page,
-        color,
-        size,
-        path: `M ${p.x} ${p.y}`,
-      });
+  // Save annotations to supabase
+  const saveAnnotations = async () => {
+    if (!noteId) {
+      toast.error("Note ID missing, cannot save annotations.");
+      return;
     }
+    setSavingStrokes(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("You must be logged in to save annotations.");
+        return;
+      }
+      
+      const { error } = await supabase.from("user_annotations").upsert({
+        user_id: session.user.id,
+        note_id: noteId,
+        annotations_data: strokes,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id, note_id' });
 
-    if (tool === "eraser") setErasing(true);
-  }
-
-  function onMouseMove(e: React.MouseEvent, page: number) {
-    if (tool === "select" || page !== activePage) return;
-
-    const p = getPoint(e, page);
-    if (!p) return;
-
-    if (tool === "brush" && current) {
-      setCurrent((prev) =>
-        prev ? { ...prev, path: `${prev.path} L ${p.x} ${p.y}` } : prev,
-      );
+      if (error) throw error;
+      toast.success("Annotations saved successfully!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to save annotations.");
+    } finally {
+      setSavingStrokes(false);
     }
+  };
 
-    if (tool === "eraser" && erasing) {
-      setStrokes((prev) =>
-        prev.filter((stroke) => {
-          if (stroke.page !== page) return true;
-
-          return !stroke.path.split("L").some((seg) => {
-            const [x, y] = seg.replace("M", "").trim().split(" ").map(Number);
-            return Math.hypot(x - p.x, y - p.y) < size;
-          });
-        }),
-      );
-    }
-  }
-
-  function onMouseUp() {
-    if (current) {
-      setStrokes((prev) => [...prev, current]);
-      setCurrent(null);
-    }
-    setErasing(false);
-    setActivePage(null);
-  }
-
+  // ---------------- POINTER EVENTS ----------------
   function onPointerDown(e: React.PointerEvent, page: number) {
     if (tool === "select") return;
 
@@ -633,6 +662,7 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                   <Button
                     variant={"ghost"}
                     className=" hover:bg-primary/10 px-4"
+                    onClick={() => setAiChatOpen(true)}
                   >
                     <BotMessageSquare className={"w-4 h-4 text-primary"} />
 
@@ -642,9 +672,10 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                   <Button
                     variant={"ghost"}
                     className="hover:bg-primary/10 px-4"
+                    onClick={saveAnnotations}
+                    disabled={savingStrokes}
                   >
-                    <SaveIcon className={iconClass} />
-
+                    {savingStrokes ? <Spinner className="w-4 h-4 text-primary" /> : <SaveIcon className={iconClass} />}
                     <p className="ml-2 ">Save</p>
                   </Button>
                   <span className="flex items-center text-sm">
@@ -654,7 +685,11 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                 </PopoverContent>
               </Popover>
             ) : (
-              <Button variant={"ghost"} className=" hover:bg-primary/10 px-4">
+              <Button 
+                variant={"ghost"} 
+                className=" hover:bg-primary/10 px-4"
+                onClick={() => setAiChatOpen(true)}
+              >
                 <BotMessageSquare className={"w-4 h-4 text-primary"} />
 
                 <p className="ml-2 text-secondary/80">AI Workspace</p>
@@ -663,9 +698,13 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
           </div>
           {isCompactToolbar ? null : (
             <>
-              <Button variant={"ghost"} className="hover:bg-primary/10 px-4">
-                <SaveIcon className={iconClass} />
-
+              <Button 
+                variant={"ghost"} 
+                className="hover:bg-primary/10 px-4"
+                onClick={saveAnnotations}
+                disabled={savingStrokes}
+              >
+                {savingStrokes ? <Spinner className="w-4 h-4 text-primary" /> : <SaveIcon className={iconClass} />}
                 <p className="ml-2 ">Save</p>
               </Button>
               <ThemeToggle />
@@ -674,14 +713,28 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
         </motion.div>
       </motion.div>
 
+      <AiWorkspaceChat open={aiChatOpen} onOpenChange={setAiChatOpen} noteId={noteId} prefilledText={selectedText} />
+
+      <AnimatePresence>
+        {selectedText && (
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 50, opacity: 0 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border border-primary/20 shadow-xl rounded-full px-4 py-2 flex items-center gap-3 backdrop-blur-md"
+          >
+            <span className="text-sm truncate max-w-[200px] text-muted-foreground italic">"{selectedText}"</span>
+            <Button size="sm" onClick={() => setAiChatOpen(true)} className="rounded-full">
+              <BotMessageSquare className="w-4 h-4 mr-2" />
+              Ask AI
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div
-        ref={(el) => {
-          pageRefs.current[pageNumber] = el;
-        }}
-        className="relative mt-16 border "
-        onMouseDown={(e) => onMouseDown(e, pageNumber)}
-        onMouseMove={(e) => onMouseMove(e, pageNumber)}
-        onMouseUp={onMouseUp}
+        ref={pdfContainerRef}
+        className="relative mt-16 border rounded-sm"
       >
         <Document
           file={fileUrl}
@@ -708,20 +761,22 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                   <div className="flex gap-4 w-fit mx-auto">
                     {/* LEFT PAGE */}
                     <div className="relative border border-secondary/30">
-                      <div className="pointer-events-none">
+                      <div className={tool === "select" ? "" : "pointer-events-none"}>
                         <Page pageNumber={pageNumber} width={pageWidth} />
                       </div>
 
-                      <div
-                        ref={(el) => {
-                          pageRefs.current[pageNumber] = el;
-                        }}
-                        className="absolute inset-0 touch-none"
-                        onPointerDown={(e) => onPointerDown(e, pageNumber)}
-                        onPointerMove={(e) => onPointerMove(e, pageNumber)}
-                        onPointerUp={onPointerUp}
-                        onPointerCancel={onPointerUp}
-                      />
+                      {tool !== "select" && (
+                        <div
+                          ref={(el) => {
+                            pageRefs.current[pageNumber] = el;
+                          }}
+                          className="absolute inset-0 touch-none"
+                          onPointerDown={(e) => onPointerDown(e, pageNumber)}
+                          onPointerMove={(e) => onPointerMove(e, pageNumber)}
+                          onPointerUp={onPointerUp}
+                          onPointerCancel={onPointerUp}
+                        />
+                      )}
 
                       {(() => {
                         const size = getPageSize(pageNumber);
@@ -756,24 +811,26 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                     {/* RIGHT PAGE */}
                     {pageNumber + 1 <= (numPages ?? 0) && (
                       <div className="relative">
-                        <div className="pointer-events-none border border-secondary/30">
+                        <div className={tool === "select" ? "border border-secondary/30" : "pointer-events-none border border-secondary/30"}>
                           <Page pageNumber={pageNumber + 1} width={pageWidth} />
                         </div>
 
-                        <div
-                          ref={(el) => {
-                            pageRefs.current[pageNumber + 1] = el;
-                          }}
-                          className="absolute inset-0 touch-none"
-                          onPointerDown={(e) =>
-                            onPointerDown(e, pageNumber + 1)
-                          }
-                          onPointerMove={(e) =>
-                            onPointerMove(e, pageNumber + 1)
-                          }
-                          onPointerUp={onPointerUp}
-                          onPointerCancel={onPointerUp}
-                        />
+                        {tool !== "select" && (
+                          <div
+                            ref={(el) => {
+                              pageRefs.current[pageNumber + 1] = el;
+                            }}
+                            className="absolute inset-0 touch-none"
+                            onPointerDown={(e) =>
+                              onPointerDown(e, pageNumber + 1)
+                            }
+                            onPointerMove={(e) =>
+                              onPointerMove(e, pageNumber + 1)
+                            }
+                            onPointerUp={onPointerUp}
+                            onPointerCancel={onPointerUp}
+                          />
+                        )}
                         {(() => {
                           const size = getPageSize(pageNumber + 1);
                           if (!size) return null;
@@ -817,40 +874,53 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                   className="flex justify-center"
                 >
                   <div className="relative">
-                    {/* 1️⃣ PDF RENDER (NO INPUT EVER) */}
-                    <div className="pointer-events-none">
+                    {/* 1️⃣ PDF RENDER */}
+                    <div className={tool === "select" ? "" : "pointer-events-none"}>
                       <Page pageNumber={pageNumber} width={pageWidth} />
                     </div>
 
-                    {/* 2️⃣ INTERACTION OVERLAY (THIS IS THE KEY) */}
-                    <div
-                      ref={(el) => {
-                        pageRefs.current[pageNumber + 1] = el;
-                      }}
-                      className="absolute inset-0 touch-none select-none"
-                      onPointerDown={(e) => onPointerDown(e, pageNumber + 1)}
-                      onPointerMove={(e) => onPointerMove(e, pageNumber + 1)}
-                      onPointerUp={onPointerUp}
-                      onPointerCancel={onPointerUp}
-                    />
+                    {/* 2️⃣ INTERACTION OVERLAY (only in brush/eraser mode) */}
+                    {tool !== "select" && (
+                      <div
+                        ref={(el) => {
+                          pageRefs.current[pageNumber] = el;
+                        }}
+                        className="absolute inset-0 touch-none select-none"
+                        onPointerDown={(e) => onPointerDown(e, pageNumber)}
+                        onPointerMove={(e) => onPointerMove(e, pageNumber)}
+                        onPointerUp={onPointerUp}
+                        onPointerCancel={onPointerUp}
+                      />
+                    )}
 
                     {/* 3️⃣ ANNOTATIONS */}
-                    <svg className="absolute inset-0 h-full w-full pointer-events-none">
-                      {[...strokes, ...(current ? [current] : [])]
-                        .filter((s) => s.page === pageNumber + 1)
-                        .map((s) => (
-                          <path
-                            key={s.id}
-                            d={s.path}
-                            stroke={s.color}
-                            strokeWidth={s.size}
-                            strokeLinecap="square"
-                            strokeLinejoin="miter"
-                            fill="none"
-                            opacity={FIXED_OPACITY}
-                          />
-                        ))}
-                    </svg>
+                    {(() => {
+                      const size = getPageSize(pageNumber);
+                      if (!size) return null;
+                      return (
+                        <svg 
+                          className="absolute inset-0 pointer-events-none"
+                          width={size.width}
+                          height={size.height}
+                          viewBox={`0 0 ${size.width} ${size.height}`}
+                        >
+                          {[...strokes, ...(current ? [current] : [])]
+                            .filter((s) => s.page === pageNumber)
+                            .map((s) => (
+                              <path
+                                key={s.id}
+                                d={s.path}
+                                stroke={s.color}
+                                strokeWidth={s.size}
+                                strokeLinecap="square"
+                                strokeLinejoin="miter"
+                                fill="none"
+                                opacity={FIXED_OPACITY}
+                              />
+                            ))}
+                        </svg>
+                      );
+                    })()}
                   </div>
                 </motion.div>
               )}

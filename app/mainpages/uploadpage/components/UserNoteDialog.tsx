@@ -25,9 +25,16 @@ import {
   BookOpenText,
   Trash2,
   Loader2,
+  Edit3,
+  Check,
+  X
 } from "lucide-react";
 import formatDate from "@/app/utilities/formatDate";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import supabase from "@/app/API/supabase";
+import { toast } from "sonner";
 
 interface NoteSummaryDialogProps {
   isOpen: boolean;
@@ -54,9 +61,45 @@ export default function NoteSummaryDialog({
   onDelete, // Destructure new prop
   isDeleting,
 }: NoteSummaryDialogProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && note) {
+      setEditTitle(note.title);
+      setEditDesc(note.description || "");
+      setIsEditing(false);
+    }
+  }, [isOpen, note]);
+
+  const handleSaveEdit = async () => {
+    if (!note || isSavingEdit) return;
+    setIsSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from("notes")
+        .update({ title: editTitle, description: editDesc })
+        .eq("id", note.id);
+      
+      if (error) throw error;
+      
+      toast.success("Note updated successfully!");
+      // Directly mutating the note object for optimistic ui
+      note.title = editTitle;
+      note.description = editDesc;
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to update note");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   // Determine if open state should change
   const formattedDate = note ? formatDate(note.created_at) : "Unknown Date";
-  console.log(formattedDate)
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       onClose();
@@ -64,7 +107,7 @@ export default function NoteSummaryDialog({
   };
 
   const viewerUrl = note?.file_path
-    ? `/mainpages/studysession?file=${encodeURIComponent(note.file_path)}`
+    ? `/mainpages/studysession?file=${encodeURIComponent(note.file_path)}&noteId=${note.id}`
     : "#";
   // const viewerUrl =
 
@@ -73,9 +116,37 @@ export default function NoteSummaryDialog({
       {/* 1. Responsive Dialog Container */}
       <DialogContent className="w-[95vw] border-secondary/10 sm:max-w-lg max-h-[90vh] flex flex-col gap-0 p-4 sm:p-6 overflow-hidden">
         <DialogHeader className="text-left space-y-4">
-          <DialogTitle className="text-xl md:text-2xl leading-tight">
-            {note?.title || "Note Title"}
-          </DialogTitle>
+          <div className="flex justify-between items-start gap-4">
+            {isEditing ? (
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full text-xl md:text-2xl font-bold bg-background border border-primary/50 rounded-md px-3 py-1 outline-none"
+                placeholder="Note Title"
+              />
+            ) : (
+              <DialogTitle className="text-xl md:text-2xl leading-tight">
+                {note?.title || "Note Title"}
+              </DialogTitle>
+            )}
+            
+            <div className="flex shrink-0 items-center justify-center pt-1 md:pr-4">
+              {isEditing ? (
+                <div className="flex gap-2">
+                  <button onClick={handleSaveEdit} disabled={isSavingEdit} className="text-green-500 hover:text-green-400 bg-background/50 border rounded p-1">
+                    {isSavingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  </button>
+                  <button onClick={() => setIsEditing(false)} disabled={isSavingEdit} className="text-red-500 hover:text-red-400 bg-background/50 border rounded p-1">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setIsEditing(true)} className="text-muted-foreground hover:text-primary transition-colors flex items-center justify-center bg-background/50 border rounded p-1 shadow-sm">
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* 2. Tags Section (Wraps nicely on small screens) */}
           <div className="flex flex-wrap gap-2 text-xs font-medium">
@@ -89,9 +160,18 @@ export default function NoteSummaryDialog({
 
           {/* 3. Description Section (Scrollable on mobile) */}
           <DialogDescription asChild>
-            <p className="bg-muted/30  wrap-break-word w-full md:h-24 h-32 border border-border/50 text-foreground text-sm p-3 rounded-md text-left max-h-[25vh] custom-scrollbar leading-relaxed">
-              {note?.description || "No Description Available"}
-            </p>
+            {isEditing ? (
+              <textarea
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                className="w-full h-32 bg-background border border-primary/50 text-foreground text-sm p-3 rounded-md custom-scrollbar resize-none outline-none"
+                placeholder="Note description..."
+              />
+            ) : (
+              <p className="bg-muted/30 wrap-break-word w-full md:h-24 h-32 border border-border/50 text-foreground text-sm p-3 rounded-md text-left max-h-[25vh] custom-scrollbar leading-relaxed">
+                {note?.description || "No Description Available"}
+              </p>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -113,9 +193,11 @@ export default function NoteSummaryDialog({
               <span>Uploaded {formattedDate}</span>
             </div>
           </div>
-          <div className="flex w-1/2 mt-2 items-center gap-2 sm:col-span-2">
-            <Eye size={16} className="shrink-0 text-primary/70" />
-            <span>{note?.downloads || 0} Views</span>
+          <div className="flex w-full mt-2 items-center gap-2 justify-between">
+            <span className="flex items-center gap-2">
+              <Eye size={16} className="shrink-0 text-primary/70" />
+              <span>{note?.downloads || 0} Views</span>
+            </span>
           </div>
         </div>
 

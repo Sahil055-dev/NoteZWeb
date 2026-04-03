@@ -110,7 +110,7 @@ const QuickActions = () => {
                   {globalCount !== null && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-medium text-amber-600 dark:text-amber-400">
                       <NotebookText className="w-3 h-3" />
-                     Total {globalCount.toLocaleString()} Notes uploaded on 
+                     Total {globalCount.toLocaleString()} Notes uploaded on NoteZ
                     </span>
                   )}
                   {uploadCount !== null && (
